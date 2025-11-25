@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "title": "Bienal de Montevideo: Amazonas Ancestral",
+    "url": "https://ejemplo.com/bienal",
+    "start": "2025-11-01",
+    "end": "2025-11-20",
+    "color": "bg-[#d9c796]"
+  },
+  {
+    "id": 2,
+    "title": "Uruguay Cartel",
+    "url": "https://ejemplo.com/cartel",
+    "start": "2025-11-01",
+    "end": "2025-11-08",
+    "color": "bg-[#949834]"
+  },
+  {
+    "id": 3,
+    "title": "Art Night La Mostra",
+    "url": "https://ejemplo.com/mostra",
+    "start": "2025-11-06",
+    "end": "2025-11-06",
+    "color": "bg-[#9cb4d8]"
+  },
+  {
+    "id": 4,
+    "title": "Feria de empleo Diseño ORT",
+    "url": "https://ejemplo.com/ort",
+    "start": "2025-11-06",
+    "end": "2025-11-06",
+    "color": "bg-[#d0603b] text-white"
+  },
+  {
+    "id": 5,
+    "title": "Feria Tapir",
+    "url": "https://ejemplo.com/tapir",
+    "start": "2025-11-07",
+    "end": "2025-11-09",
+    "color": "bg-[#5d3a2f] text-white"
+  }
+]
