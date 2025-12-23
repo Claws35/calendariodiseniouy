@@ -3,40 +3,96 @@
     "id": 1,
     "title": "Bienal de Montevideo: Amazonas Ancestral",
     "url": "https://ejemplo.com/bienal",
-    "start": "2025-11-01",
-    "end": "2025-11-20",
-    "color": "bg-[#d9c796]"
+    "start": "2025-12-12",
+    "end": "2026-01-01",
+    "color": "bg-[#E6C98A] text-neutral-900"
   },
   {
     "id": 2,
     "title": "Uruguay Cartel",
     "url": "https://ejemplo.com/cartel",
-    "start": "2025-11-01",
-    "end": "2025-11-08",
-    "color": "bg-[#949834]"
+    "start": "2025-12-10",
+    "end": "2026-01-10",
+    "color": "bg-[#9EA11E] text-neutral-900"
   },
   {
     "id": 3,
     "title": "Art Night La Mostra",
     "url": "https://ejemplo.com/mostra",
-    "start": "2025-11-06",
-    "end": "2025-11-06",
-    "color": "bg-[#9cb4d8]"
+    "start": "2025-12-18",
+    "end": "2025-12-18",
+    "color": "bg-[#7E9BC4] text-neutral-900"
   },
   {
     "id": 4,
     "title": "Feria de empleo Diseño ORT",
     "url": "https://ejemplo.com/ort",
-    "start": "2025-11-06",
-    "end": "2025-11-06",
-    "color": "bg-[#d0603b] text-white"
+    "start": "2025-12-19",
+    "end": "2025-12-19",
+    "color": "bg-[#C74A1E] text-white"
   },
   {
     "id": 5,
     "title": "Feria Tapir",
     "url": "https://ejemplo.com/tapir",
-    "start": "2025-11-07",
-    "end": "2025-11-09",
-    "color": "bg-[#5d3a2f] text-white"
+    "start": "2025-12-20",
+    "end": "2025-12-22",
+    "color": "bg-[#6B3F35] text-white"
+  },
+  {
+    "id": 6,
+    "title": "Festival Verano Montevideo",
+    "url": "https://ejemplo.com/verano-mvd",
+    "start": "2026-01-05",
+    "end": "2026-01-12",
+    "color": "bg-[#9EA11E] text-neutral-900"
+  },
+  {
+    "id": 7,
+    "title": "Expo Diseño Independiente",
+    "url": "https://ejemplo.com/diseno-indie",
+    "start": "2026-01-08",
+    "end": "2026-01-09",
+    "color": "bg-[#2F3E46] text-white"
+  },
+  {
+    "id": 8,
+    "title": "Ciclo de Cine al Aire Libre",
+    "url": "https://ejemplo.com/cine-verano",
+    "start": "2026-01-10",
+    "end": "2026-01-17",
+    "color": "bg-[#7E9BC4] text-neutral-900"
+  },
+  {
+    "id": 9,
+    "title": "Feria Creativa Punta del Este",
+    "url": "https://ejemplo.com/feria-creativa",
+    "start": "2026-01-16",
+    "end": "2026-01-18",
+    "color": "bg-[#E6C98A] text-neutral-900"
+  },
+  {
+    "id": 10,
+    "title": "Encuentro UX / UI Uruguay",
+    "url": "https://ejemplo.com/ux-ui",
+    "start": "2026-01-20",
+    "end": "2026-01-20",
+    "color": "bg-[#CFCBC2] text-neutral-900"
+  },
+  {
+    "id": 11,
+    "title": "Residencia Artística Costera",
+    "url": "https://ejemplo.com/residencia",
+    "start": "2026-01-22",
+    "end": "2026-01-28",
+    "color": "bg-[#E6C98A] text-neutral-900"
+  },
+  {
+    "id": 12,
+    "title": "Residencia Artística Costera (Edición corta)",
+    "url": "https://ejemplo.com/residencia",
+    "start": "2026-01-24",
+    "end": "2026-01-26",
+    "color": "bg-[#CFCBC2] text-neutral-900"
   }
 ]

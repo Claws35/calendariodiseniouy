@@ -2,67 +2,200 @@
 import "../styles/global.css";
 import events from "../data/events.json";
 
-// Días de noviembre (1–30)
-const days = Array.from({ length: 30 }, (_, i) => i + 1);
+/* =========================
+   TIMEZONE URUGUAY
+========================= */
+const TZ = "America/Montevideo";
+const DAY_MS = 86400000;
 
-// Parseo seguro en UTC
-const toUTC = (dateStr) => new Date(dateStr + "T00:00:00Z");
+/* Helpers */
+const toUY = (d) => new Date(`${d}T00:00:00-03:00`);
 
-// Duración total en días (incluye el inicio y el fin)
-const getSpan = (start, end) => {
-  const d1 = toUTC(start);
-  const d2 = toUTC(end);
-  const diff = (d2 - d1) / 86400000; // ms → días
-  return diff + 1;
-};
+/* Hoy en Uruguay */
+const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
+const today = toUY(todayStr);
+
+/* Rango visible */
+const TOTAL_DAYS = 60;
+
+/* Weekdays */
+const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+
+/* Días */
+const days = Array.from({ length: TOTAL_DAYS }, (_, i) => {
+  const d = new Date(today.getTime() + i * DAY_MS);
+  return {
+    day: d.getDate(),
+    weekday: WEEKDAYS[d.getDay()],
+    monthName: d.toLocaleString("es-ES", { month: "long", timeZone: TZ }),
+  };
+});
+
+/* Diferencia en días */
+const diffDays = (a, b) => Math.floor((a - b) / DAY_MS);
+
+/* =========================
+   ALGORITMO DE FILAS
+========================= */
+const sortedEvents = [...events].sort(
+  (a, b) => new Date(a.start) - new Date(b.start)
+);
+
+// cada índice = fila, valor = último día ocupado
+const rows = [];
+
+function getRow(start, end) {
+  for (let i = 0; i < rows.length; i++) {
+    if (start > rows[i]) {
+      rows[i] = end;
+      return i + 3; // 👈 filas 1 y 2 son encabezados
+    }
+  }
+  rows.push(end);
+  return rows.length + 2;
+}
 ---
-<!DOCTYPE html>
-<html lang="es" class="h-full bg-neutral-100 dark:bg-neutral-900">
+
+<!doctype html>
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <title>Eventos Noviembre 2025</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calendario</title>
   </head>
 
-  <body class="min-h-screen text-neutral-900 dark:text-neutral-100 antialiased">
-    <main class="container mx-auto px-6 py-12">
-      <h1 class="text-3xl font-semibold mb-6">📅 Eventos Noviembre 2025</h1>
+  <body class="bg-neutral-100 text-neutral-900 font-serif">
+    <main class="max-w-[1400px] mx-auto px-10 py-12">
+      <h1 class="text-[28px] font-semibold mb-6">Calendario</h1>
 
-      <!-- Scroll horizontal -->
-      <div class="w-full overflow-x-auto pb-6">
+      <!-- MES STICKY -->
+      <div
+        id="monthLabel"
+        class="
+          sticky top-0 z-30
+          bg-neutral-100
+          py-4
+          text-[22px] font-semibold
+          tracking-wide
+        "
+      >
+        {days[0].monthName}
+      </div>
 
-        <!-- Timeline en grid horizontal -->
+      <!-- TIMELINE -->
+      <div id="timeline" class="overflow-x-auto">
         <div
-          class="grid gap-2"
-          style={`grid-template-columns: repeat(${days.length}, 150px);`}
+          class="grid gap-x-14 gap-y-5 items-start"
+          style={`grid-template-columns: repeat(${days.length}, 180px);`}
         >
-
-          <!-- Header de días -->
+          <!-- FILA 1: WEEKDAY -->
           {days.map((d) => (
-            <div class="text-center font-bold py-1 border-b border-neutral-400">
-              {d}
+            <div
+              class="day-col text-center text-[18px] italic text-neutral-500"
+              data-month={d.monthName}
+            >
+              {d.weekday}
             </div>
           ))}
 
-          <!-- Eventos -->
-          {events.map((ev) => {
-            const start = toUTC(ev.start);
-            const span = getSpan(ev.start, ev.end);
-            const startDay = start.getUTCDate();
+          <!-- FILA 2: DÍA -->
+          {days.map((d) => (
+            <div
+              class="
+                text-center
+                text-[20px] font-semibold
+                pb-3
+                border-b border-neutral-300
+              "
+            >
+              {d.day}
+            </div>
+          ))}
+
+          <!-- EVENTOS -->
+          {sortedEvents.map((ev) => {
+            const start = toUY(ev.start);
+            const end = toUY(ev.end);
+
+            const startOffset = diffDays(start, today);
+            const endOffset = diffDays(end, today);
+
+            if (endOffset < 0 || startOffset >= TOTAL_DAYS) return null;
+
+            const colStart = Math.max(1, startOffset + 1);
+            const colEnd = Math.min(TOTAL_DAYS, endOffset + 1);
+            const span = colEnd - colStart + 1;
+
+            const row = getRow(startOffset, endOffset);
 
             return (
-              <a
-                href={ev.url}
-                target="_blank"
-                class={`p-3 rounded text-sm shadow-md hover:scale-[1.03] transition cursor-pointer ${ev.color ?? ""}`}
-                style={`grid-column: ${startDay} / span ${span};`}
+              <div
+                class="relative h-16"
+                style={`
+                  grid-column: ${colStart} / span ${span};
+                  grid-row: ${row};
+                `}
               >
-                {ev.title}
-              </a>
+                <!-- DURACIÓN -->
+                <div
+                  class={`
+                    absolute inset-0
+                    rounded-2xl
+                    opacity-100
+                    ${ev.color}
+                  `}
+                />
+
+                <!-- TÍTULO STICKY -->
+                <div
+                  class={`
+                    sticky left-0 z-10
+                    h-full inline-flex items-center
+                    px-5
+                    rounded-2xl
+                    whitespace-nowrap
+                    ${ev.color}
+                  `}
+                >
+                  <span class="relative z-10 text-[15px] font-medium">
+                    {ev.title}
+                  </span>
+
+                  <!-- DEGRADADO -->
+                  <span
+                    class="
+                      pointer-events-none
+                      absolute right-0 top-0
+                      h-full w-10
+                    
+                      rounded-r-2xl
+                    "
+                  />
+                </div>
+              </div>
             );
           })}
         </div>
       </div>
     </main>
+
+    <!-- MES DINÁMICO -->
+    <script>
+      const timeline = document.getElementById("timeline");
+      const monthLabel = document.getElementById("monthLabel");
+      const dayCols = document.querySelectorAll(".day-col");
+      const columnWidth = 180;
+
+      timeline.addEventListener("scroll", () => {
+        const index = Math.floor(timeline.scrollLeft / columnWidth);
+        const day = dayCols[index];
+        if (!day) return;
+
+        const month = day.dataset.month;
+        if (monthLabel.textContent !== month) {
+          monthLabel.textContent = month;
+        }
+      });
+    </script>
   </body>
 </html>

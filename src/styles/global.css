@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+#timeline {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.event {
+  position: relative;
+  min-width: 0;
+}
+
+.event-inner {
+  position: relative;
+  overflow: hidden;
+  padding: 0.75rem;
+}
+
+.event-title {
+  left: 0;
+  display: inline-block;
+  white-space: nowrap;
+  z-index: 1;
+  padding-right: 1rem;
+}
