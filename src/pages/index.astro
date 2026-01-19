@@ -21,7 +21,7 @@ const TOTAL_DAYS = 60;
 /* Weekdays */
 const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
-/* Días */
+/* Días (DESKTOP – igual que antes) */
 const days = Array.from({ length: TOTAL_DAYS }, (_, i) => {
   const d = new Date(today.getTime() + i * DAY_MS);
   const month = d.toLocaleString("es-ES", { month: "long", timeZone: TZ });
@@ -36,25 +36,53 @@ const days = Array.from({ length: TOTAL_DAYS }, (_, i) => {
 const diffDays = (a, b) => Math.floor((a - b) / DAY_MS);
 
 /* =========================
-   ALGORITMO DE FILAS
+   DESKTOP – TAL CUAL
 ========================= */
 const sortedEvents = [...events].sort(
-  (a, b) => new Date(a.start) - new Date(b.start)
+  (a, b) => new Date(a.start) - new Date(b.start),
 );
 
-// cada índice = fila, valor = último día ocupado
 const rows = [];
 
 function getRow(start, end) {
   for (let i = 0; i < rows.length; i++) {
     if (start > rows[i]) {
       rows[i] = end;
-      return i + 3; // 👈 filas 1 y 2 son encabezados
+      return i + 3;
     }
   }
   rows.push(end);
   return rows.length + 2;
 }
+
+/* =========================
+   MOBILE – NUEVO (AISLADO)
+========================= */
+const mobileDays = Array.from({ length: TOTAL_DAYS }, (_, i) => {
+  const d = new Date(today.getTime() + i * DAY_MS);
+  const key = d.toISOString().split("T")[0];
+  const month = d.toLocaleString("es-ES", { month: "long", timeZone: TZ });
+
+  return {
+    key,
+    day: d.getDate(),
+    weekday: WEEKDAYS[d.getDay()],
+    monthName: month.charAt(0).toUpperCase() + month.slice(1),
+  };
+});
+
+const eventsByDay = {};
+
+events.forEach((ev) => {
+  const start = toUY(ev.start);
+  const end = toUY(ev.end);
+
+  for (let d = new Date(start); d <= end; d = new Date(d.getTime() + DAY_MS)) {
+    const key = d.toISOString().split("T")[0];
+    if (!eventsByDay[key]) eventsByDay[key] = [];
+    eventsByDay[key].push(ev);
+  }
+});
 ---
 
 <!doctype html>
@@ -62,133 +90,158 @@ function getRow(start, end) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title class="">Calendario</title>
+    <title>Calendario</title>
   </head>
 
   <body class="bg-neutral-100 text-neutral-900">
-    <main class="max-w-[1400px] mx-auto px-10 py-12">
-      <h1 class="text-[28px] font-semibold mb-6 font-[PPEditorialNew]">Calendario</h1>
+    <main class="max-w-[1400px] mx-auto px-4 md:px-10 py-12">
+      <h1 class="text-[28px] font-semibold mb-6 font-[PPEditorialNew]">
+        Calendario
+      </h1>
 
-      <!-- MES STICKY -->
-      <div
-        id="monthLabel"
-        class="
-          sticky top-0 z-30
-          bg-neutral-100
-          py-4
-          text-[22px] font-semibold
-          tracking-wide
-          font-[PPEditorialNew]
-        "
-      >
-        {days[0].monthName}
-      </div>
-
-      <!-- TIMELINE -->
-      <div id="timeline" class="overflow-x-auto">
-        <div
-          class="grid gap-x-14 gap-y-5 items-start"
-          style={`grid-template-columns: repeat(${days.length}, 180px);`}
-        >
-          <!-- FILA 1: WEEKDAY -->
-          {days.map((d) => (
-            <div
-              class="font-[PPEditorialNew] day-col text-center text-[18px] italic text-neutral-500"
-              data-month={d.monthName}
-            >
-              {d.weekday}
-            </div>
-          ))}
-
-          <!-- FILA 2: DÍA -->
-          {days.map((d) => (
-            <div
-              class="font-[PPEditorialNew]
-                text-center
-                text-[20px] font-semibold
-                pb-3
-                border-b border-neutral-300
-              "
-            >
-              {d.day}
-            </div>
-          ))}
-
-          <!-- EVENTOS -->
-          {sortedEvents.map((ev) => {
-            const start = toUY(ev.start);
-            const end = toUY(ev.end);
-
-            const startOffset = diffDays(start, today);
-            const endOffset = diffDays(end, today);
-
-            if (endOffset < 0 || startOffset >= TOTAL_DAYS) return null;
-
-            const colStart = Math.max(1, startOffset + 1);
-            const colEnd = Math.min(TOTAL_DAYS, endOffset + 1);
-            const span = colEnd - colStart + 1;
-
-            const row = getRow(startOffset, endOffset);
+      <!-- =========================
+           MOBILE (NUEVO)
+      ========================== -->
+      <div class="block md:hidden space-y-10">
+        {
+          mobileDays.map((d) => {
+            const dayEvents = eventsByDay[d.key] || [];
 
             return (
-              <div
-                class="relative h-16"
-                style={`
-                  grid-column: ${colStart} / span ${span};
-                  grid-row: ${row};
-                `}
-              >
-                <!-- DURACIÓN -->
-                <div
-                  class={`font-[PPEditorialNew]
-                    absolute inset-0
-                    rounded-2xl
-                    opacity-100
-                    ${ev.color}
-                  `}
-                />
-
-                <!-- TÍTULO STICKY -->
-                <div
-                  class={`font-[PPEditorialNew]
-                    sticky left-0 z-10
-                    h-full inline-flex items-center
-                    px-5
-                    rounded-2xl
-                    whitespace-nowrap
-                    ${ev.color}
-                  `}
-                >
-                  <span class="relative z-10 text-[15px] font-medium">
-                    {ev.title}
-                  </span>
-
-                  <!-- DEGRADADO -->
-                  <span
-                    class="
-                      pointer-events-none
-                      absolute right-0 top-0
-                      h-full w-10
-                    
-                      rounded-r-2xl
-                    "
-                  />
+              <section class="space-y-3">
+                <div class="flex items-baseline gap-4">
+                  <span class="text-[36px] font-[PPEditorialNew]">{d.day}</span>
+                  <span class="italic text-neutral-500">{d.weekday}</span>
                 </div>
-              </div>
+
+                <div class="space-y-2">
+                  {dayEvents.map((ev) => (
+                    <div class={`rounded-2xl px-4 py-3 ${ev.color}`}>
+                      <p class="font-[PPEditorialNew] text-[15px]">
+                        {ev.title}
+                      </p>
+                    </div>
+                  ))}
+
+                  {dayEvents.length === 0 && (
+                    <div class="h-px bg-neutral-200" />
+                  )}
+                </div>
+              </section>
             );
-          })}
+          })
+        }
+      </div>
+
+      <!-- =========================
+           DESKTOP (ORIGINAL)
+      ========================== -->
+      <div class="hidden md:block">
+        <!-- MES STICKY -->
+        <div
+          id="monthLabel"
+          class="sticky top-0 z-30
+            bg-neutral-100
+            py-4
+            text-[22px] font-semibold
+            tracking-wide
+            font-[PPEditorialNew]"
+        >
+          {days[0].monthName}
+        </div>
+
+        <!-- TIMELINE -->
+        <div id="timeline" class="overflow-x-auto">
+          <div
+            class="grid gap-x-14 gap-y-5 items-start"
+            style={`grid-template-columns: repeat(${days.length}, 180px);`}
+          >
+            <!-- FILA 1: WEEKDAY -->
+            {
+              days.map((d) => (
+                <div
+                  class="font-[PPEditorialNew] day-col text-center text-[18px] italic text-neutral-500"
+                  data-month={d.monthName}
+                >
+                  {d.weekday}
+                </div>
+              ))
+            }
+
+            <!-- FILA 2: DÍA -->
+            {
+              days.map((d) => (
+                <div
+                  class="font-[PPEditorialNew]
+                  text-center
+                  text-[20px] font-semibold
+                  pb-3
+                  border-b border-neutral-300
+                "
+                >
+                  {d.day}
+                </div>
+              ))
+            }
+
+            <!-- EVENTOS -->
+            {
+              sortedEvents.map((ev) => {
+                const start = toUY(ev.start);
+                const end = toUY(ev.end);
+
+                const startOffset = diffDays(start, today);
+                const endOffset = diffDays(end, today);
+
+                if (endOffset < 0 || startOffset >= TOTAL_DAYS) return null;
+
+                const colStart = Math.max(1, startOffset + 1);
+                const colEnd = Math.min(TOTAL_DAYS, endOffset + 1);
+                const span = colEnd - colStart + 1;
+
+                const row = getRow(startOffset, endOffset);
+
+                return (
+                  <div
+                    class="relative h-16"
+                    style={`
+                    grid-column: ${colStart} / span ${span};
+                    grid-row: ${row};
+                  `}
+                  >
+                    <div class={`absolute inset-0 rounded-2xl ${ev.color}`} />
+
+                    <div
+                      class={`font-[PPEditorialNew]
+                      sticky left-0 z-10
+                      h-full inline-flex items-center
+                      px-5
+                      rounded-2xl
+                      whitespace-nowrap
+                      ${ev.color}
+                    `}
+                    >
+                      <span class="relative z-10 text-[15px] font-medium">
+                        {ev.title}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            }
+          </div>
         </div>
       </div>
     </main>
 
-    <!-- MES DINÁMICO -->
+    <!-- MES DINÁMICO (DESKTOP – ORIGINAL) -->
     <script>
       const timeline = document.getElementById("timeline");
       const monthLabel = document.getElementById("monthLabel");
       const dayCols = document.querySelectorAll(".day-col");
       const columnWidth = 180;
 
-      timeline.addEventListener("scroll", () => {
+      timeline?.addEventListener("scroll", () => {
         const index = Math.floor(timeline.scrollLeft / columnWidth);
         const day = dayCols[index];
         if (!day) return;
