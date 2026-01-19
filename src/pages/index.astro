@@ -24,10 +24,11 @@ const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 /* Días */
 const days = Array.from({ length: TOTAL_DAYS }, (_, i) => {
   const d = new Date(today.getTime() + i * DAY_MS);
+  const month = d.toLocaleString("es-ES", { month: "long", timeZone: TZ });
   return {
     day: d.getDate(),
     weekday: WEEKDAYS[d.getDay()],
-    monthName: d.toLocaleString("es-ES", { month: "long", timeZone: TZ }),
+    monthName: month.charAt(0).toUpperCase() + month.slice(1),
   };
 });
 
@@ -61,12 +62,12 @@ function getRow(start, end) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Calendario</title>
+    <title class="">Calendario</title>
   </head>
 
-  <body class="bg-neutral-100 text-neutral-900 font-serif">
+  <body class="bg-neutral-100 text-neutral-900">
     <main class="max-w-[1400px] mx-auto px-10 py-12">
-      <h1 class="text-[28px] font-semibold mb-6">Calendario</h1>
+      <h1 class="text-[28px] font-semibold mb-6 font-[PPEditorialNew]">Calendario</h1>
 
       <!-- MES STICKY -->
       <div
@@ -77,6 +78,7 @@ function getRow(start, end) {
           py-4
           text-[22px] font-semibold
           tracking-wide
+          font-[PPEditorialNew]
         "
       >
         {days[0].monthName}
@@ -91,7 +93,7 @@ function getRow(start, end) {
           <!-- FILA 1: WEEKDAY -->
           {days.map((d) => (
             <div
-              class="day-col text-center text-[18px] italic text-neutral-500"
+              class="font-[PPEditorialNew] day-col text-center text-[18px] italic text-neutral-500"
               data-month={d.monthName}
             >
               {d.weekday}
@@ -101,7 +103,7 @@ function getRow(start, end) {
           <!-- FILA 2: DÍA -->
           {days.map((d) => (
             <div
-              class="
+              class="font-[PPEditorialNew]
                 text-center
                 text-[20px] font-semibold
                 pb-3
@@ -138,7 +140,7 @@ function getRow(start, end) {
               >
                 <!-- DURACIÓN -->
                 <div
-                  class={`
+                  class={`font-[PPEditorialNew]
                     absolute inset-0
                     rounded-2xl
                     opacity-100
@@ -148,7 +150,7 @@ function getRow(start, end) {
 
                 <!-- TÍTULO STICKY -->
                 <div
-                  class={`
+                  class={`font-[PPEditorialNew]
                     sticky left-0 z-10
                     h-full inline-flex items-center
                     px-5
