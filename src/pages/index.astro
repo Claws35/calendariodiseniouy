@@ -15,13 +15,24 @@ const toUY = (d) => new Date(`${d}T00:00:00-03:00`);
 const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
 const today = toUY(todayStr);
 
-/* Rango visible */
-const TOTAL_DAYS = 60;
+/* =========================
+   RANGO DINÁMICO
+========================= */
+// último día real con eventos
+const lastEventDate = events.reduce((latest, ev) => {
+  const end = toUY(ev.end);
+  return end > latest ? end : latest;
+}, today);
+
+// cantidad de días visibles (inclusive)
+const TOTAL_DAYS = Math.floor((lastEventDate - today) / DAY_MS) + 1;
 
 /* Weekdays */
 const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
-/* Días (DESKTOP – igual que antes) */
+/* =========================
+   DAYS DESKTOP (ORIGINAL)
+========================= */
 const days = Array.from({ length: TOTAL_DAYS }, (_, i) => {
   const d = new Date(today.getTime() + i * DAY_MS);
   const month = d.toLocaleString("es-ES", { month: "long", timeZone: TZ });
@@ -32,11 +43,27 @@ const days = Array.from({ length: TOTAL_DAYS }, (_, i) => {
   };
 });
 
+/* =========================
+   MOBILE DAYS (AISLADO)
+========================= */
+const mobileDays = Array.from({ length: TOTAL_DAYS }, (_, i) => {
+  const d = new Date(today.getTime() + i * DAY_MS);
+  const key = d.toISOString().split("T")[0];
+  const month = d.toLocaleString("es-ES", { month: "long", timeZone: TZ });
+
+  return {
+    key,
+    day: d.getDate(),
+    weekday: WEEKDAYS[d.getDay()],
+    monthName: month.charAt(0).toUpperCase() + month.slice(1),
+  };
+});
+
 /* Diferencia en días */
 const diffDays = (a, b) => Math.floor((a - b) / DAY_MS);
 
 /* =========================
-   DESKTOP – TAL CUAL
+   DESKTOP – LÓGICA ORIGINAL
 ========================= */
 const sortedEvents = [...events].sort(
   (a, b) => new Date(a.start) - new Date(b.start),
@@ -56,21 +83,8 @@ function getRow(start, end) {
 }
 
 /* =========================
-   MOBILE – NUEVO (AISLADO)
+   MOBILE – EVENTOS POR DÍA
 ========================= */
-const mobileDays = Array.from({ length: TOTAL_DAYS }, (_, i) => {
-  const d = new Date(today.getTime() + i * DAY_MS);
-  const key = d.toISOString().split("T")[0];
-  const month = d.toLocaleString("es-ES", { month: "long", timeZone: TZ });
-
-  return {
-    key,
-    day: d.getDate(),
-    weekday: WEEKDAYS[d.getDay()],
-    monthName: month.charAt(0).toUpperCase() + month.slice(1),
-  };
-});
-
 const eventsByDay = {};
 
 events.forEach((ev) => {
@@ -100,20 +114,37 @@ events.forEach((ev) => {
       </h1>
 
       <!-- =========================
-           MOBILE (NUEVO)
+           MOBILE
       ========================== -->
       <div class="block md:hidden space-y-10">
         {
-          mobileDays.map((d) => {
+          mobileDays.map((d, i) => {
             const dayEvents = eventsByDay[d.key] || [];
+            const prev = mobileDays[i - 1];
+
+            const showMonth = !prev || prev.monthName !== d.monthName;
 
             return (
               <section class="space-y-3">
+                {/* CAMBIO DE MES */}
+                {showMonth && (
+                  <div class="pt-6 pb-2">
+                    <p class="text-[20px] font-semibold font-[PPEditorialNew]">
+                      {d.monthName}
+                    </p>
+                    <div class="h-px bg-neutral-300 mt-2" />
+                  </div>
+                )}
+
+                {/* DÍA */}
                 <div class="flex items-baseline gap-4">
                   <span class="text-[36px] font-[PPEditorialNew]">{d.day}</span>
-                  <span class="italic text-neutral-500">{d.weekday}</span>
+                  <div class="flex flex-col">
+                    <span class="italic text-neutral-500">{d.weekday}</span>
+                  </div>
                 </div>
 
+                {/* EVENTOS */}
                 <div class="space-y-2">
                   {dayEvents.map((ev) => (
                     <div class={`rounded-2xl px-4 py-3 ${ev.color}`}>
@@ -134,7 +165,7 @@ events.forEach((ev) => {
       </div>
 
       <!-- =========================
-           DESKTOP (ORIGINAL)
+           DESKTOP (INALTERADO)
       ========================== -->
       <div class="hidden md:block">
         <!-- MES STICKY -->
@@ -193,7 +224,7 @@ events.forEach((ev) => {
                 const startOffset = diffDays(start, today);
                 const endOffset = diffDays(end, today);
 
-                if (endOffset < 0 || startOffset >= TOTAL_DAYS) return null;
+                if (endOffset < 0 || startOffset > TOTAL_DAYS - 1) return null;
 
                 const colStart = Math.max(1, startOffset + 1);
                 const colEnd = Math.min(TOTAL_DAYS, endOffset + 1);
@@ -234,12 +265,15 @@ events.forEach((ev) => {
       </div>
     </main>
 
-    <!-- MES DINÁMICO (DESKTOP – ORIGINAL) -->
+    <!-- =========================
+         MES DINÁMICO DESKTOP
+    ========================== -->
     <script>
       const timeline = document.getElementById("timeline");
       const monthLabel = document.getElementById("monthLabel");
       const dayCols = document.querySelectorAll(".day-col");
-      const columnWidth = 180;
+
+      const columnWidth = 180 + 56; // 👈 CLAVE
 
       timeline?.addEventListener("scroll", () => {
         const index = Math.floor(timeline.scrollLeft / columnWidth);
