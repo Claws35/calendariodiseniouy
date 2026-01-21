@@ -1,41 +1,79 @@
 ---
 import "../styles/global.css";
-import events from "../data/events.json";
 
 /* =========================
-   TIMEZONE URUGUAY
+   TIMEZONE URUGUAY (FIXED)
 ========================= */
 const TZ = "America/Montevideo";
 const DAY_MS = 86400000;
 
-/* Helpers */
-const toUY = (d) => new Date(`${d}T00:00:00-03:00`);
+/* Convierte cualquier fecha ISO a día UY real (00:00 UY) */
+const toUY = (iso) =>
+  new Date(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: TZ,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(iso)) + "T00:00:00-03:00",
+  );
 
-/* Hoy en Uruguay */
-const todayStr = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
-const today = toUY(todayStr);
+/* HOY REAL EN URUGUAY (FIX DEFINITIVO) */
+const today = new Date(
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date()) + "T00:00:00-03:00",
+);
+
+/* =========================
+   FETCH EVENTOS
+========================= */
+const response = await fetch(
+  "https://prueba3-base-ana-production.up.railway.app/api/events",
+);
+const json = await response.json();
+
+const events = (json.docs || []).map((ev) => {
+  const url =
+    ev.url && ev.url.startsWith("http")
+      ? ev.url
+      : ev.url
+        ? `https://${ev.url}`
+        : null;
+
+  return {
+    id: ev.id,
+    title: ev.title,
+    start: ev.startDate,
+    end: ev.endDate,
+    color: ev.color,
+    url,
+  };
+});
 
 /* =========================
    RANGO DINÁMICO
 ========================= */
-// último día real con eventos
 const lastEventDate = events.reduce((latest, ev) => {
   const end = toUY(ev.end);
   return end > latest ? end : latest;
 }, today);
 
-// cantidad de días visibles (inclusive)
 const TOTAL_DAYS = Math.floor((lastEventDate - today) / DAY_MS) + 1;
 
 /* Weekdays */
 const WEEKDAYS = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 
 /* =========================
-   DAYS DESKTOP (ORIGINAL)
+   DAYS DESKTOP
 ========================= */
 const days = Array.from({ length: TOTAL_DAYS }, (_, i) => {
   const d = new Date(today.getTime() + i * DAY_MS);
   const month = d.toLocaleString("es-ES", { month: "long", timeZone: TZ });
+
   return {
     day: d.getDate(),
     weekday: WEEKDAYS[d.getDay()],
@@ -44,7 +82,7 @@ const days = Array.from({ length: TOTAL_DAYS }, (_, i) => {
 });
 
 /* =========================
-   MOBILE DAYS (AISLADO)
+   DAYS MOBILE
 ========================= */
 const mobileDays = Array.from({ length: TOTAL_DAYS }, (_, i) => {
   const d = new Date(today.getTime() + i * DAY_MS);
@@ -59,11 +97,11 @@ const mobileDays = Array.from({ length: TOTAL_DAYS }, (_, i) => {
   };
 });
 
-/* Diferencia en días */
+/* Helpers */
 const diffDays = (a, b) => Math.floor((a - b) / DAY_MS);
 
 /* =========================
-   DESKTOP – LÓGICA ORIGINAL
+   DESKTOP – EVENTOS
 ========================= */
 const sortedEvents = [...events].sort(
   (a, b) => new Date(a.start) - new Date(b.start),
@@ -97,6 +135,21 @@ events.forEach((ev) => {
     eventsByDay[key].push(ev);
   }
 });
+
+/* =========================
+   COLORES
+========================= */
+function getTextColor(bgColor) {
+  if (!bgColor) return "#111";
+
+  const hex = bgColor.replace("#", "");
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? "#111" : "#fff";
+}
 ---
 
 <!doctype html>
@@ -121,12 +174,10 @@ events.forEach((ev) => {
           mobileDays.map((d, i) => {
             const dayEvents = eventsByDay[d.key] || [];
             const prev = mobileDays[i - 1];
-
             const showMonth = !prev || prev.monthName !== d.monthName;
 
             return (
               <section class="space-y-3">
-                {/* CAMBIO DE MES */}
                 {showMonth && (
                   <div class="pt-6 pb-2">
                     <p class="text-[20px] font-semibold font-[PPEditorialNew]">
@@ -136,23 +187,30 @@ events.forEach((ev) => {
                   </div>
                 )}
 
-                {/* DÍA */}
                 <div class="flex items-baseline gap-4">
                   <span class="text-[36px] font-[PPEditorialNew]">{d.day}</span>
-                  <div class="flex flex-col">
-                    <span class="italic text-neutral-500">{d.weekday}</span>
-                  </div>
+                  <span class="italic text-neutral-500">{d.weekday}</span>
                 </div>
 
-                {/* EVENTOS */}
                 <div class="space-y-2">
-                  {dayEvents.map((ev) => (
-                    <div class={`rounded-2xl px-4 py-3 ${ev.color}`}>
-                      <p class="font-[PPEditorialNew] text-[15px]">
-                        {ev.title}
-                      </p>
-                    </div>
-                  ))}
+                  {dayEvents.map((ev) => {
+                    const bg = ev.color;
+                    const text = getTextColor(bg);
+
+                    return (
+                      <a
+                        href={ev.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="block rounded-2xl px-4 py-3 transition hover:opacity-90"
+                        style={`background-color:${bg};color:${text};`}
+                      >
+                        <p class="font-[PPEditorialNew] text-[15px]">
+                          {ev.title}
+                        </p>
+                      </a>
+                    );
+                  })}
 
                   {dayEvents.length === 0 && (
                     <div class="h-px bg-neutral-200" />
@@ -165,33 +223,28 @@ events.forEach((ev) => {
       </div>
 
       <!-- =========================
-           DESKTOP (INALTERADO)
+           DESKTOP
       ========================== -->
       <div class="hidden md:block">
-        <!-- MES STICKY -->
         <div
           id="monthLabel"
-          class="sticky top-0 z-30
-            bg-neutral-100
-            py-4
-            text-[22px] font-semibold
-            tracking-wide
-            font-[PPEditorialNew]"
+          class="sticky top-0 z-30 bg-neutral-100 py-4
+                 text-[22px] font-semibold tracking-wide
+                 font-[PPEditorialNew]"
         >
           {days[0].monthName}
         </div>
 
-        <!-- TIMELINE -->
-        <div id="timeline" class="overflow-x-auto">
+        <div id="timeline" class="overflow-x-auto min-h-[420px]">
           <div
             class="grid gap-x-14 gap-y-5 items-start"
             style={`grid-template-columns: repeat(${days.length}, 180px);`}
           >
-            <!-- FILA 1: WEEKDAY -->
             {
               days.map((d) => (
                 <div
-                  class="font-[PPEditorialNew] day-col text-center text-[18px] italic text-neutral-500"
+                  class="day-col text-center text-[18px] italic text-neutral-500
+                       font-[PPEditorialNew]"
                   data-month={d.monthName}
                 >
                   {d.weekday}
@@ -199,23 +252,18 @@ events.forEach((ev) => {
               ))
             }
 
-            <!-- FILA 2: DÍA -->
             {
               days.map((d) => (
                 <div
-                  class="font-[PPEditorialNew]
-                  text-center
-                  text-[20px] font-semibold
-                  pb-3
-                  border-b border-neutral-300
-                "
+                  class="text-center text-[20px] font-semibold pb-3
+                       border-b border-neutral-300
+                       font-[PPEditorialNew]"
                 >
                   {d.day}
                 </div>
               ))
             }
 
-            <!-- EVENTOS -->
             {
               sortedEvents.map((ev) => {
                 const start = toUY(ev.start);
@@ -231,31 +279,30 @@ events.forEach((ev) => {
                 const span = colEnd - colStart + 1;
 
                 const row = getRow(startOffset, endOffset);
+                const bg = ev.color;
+                const text = getTextColor(bg);
 
                 return (
                   <div
                     class="relative h-16"
-                    style={`
-                    grid-column: ${colStart} / span ${span};
-                    grid-row: ${row};
-                  `}
+                    style={`grid-column:${colStart}/span ${span};grid-row:${row};`}
                   >
-                    <div class={`absolute inset-0 rounded-2xl ${ev.color}`} />
-
                     <div
-                      class={`font-[PPEditorialNew]
-                      sticky left-0 z-10
-                      h-full inline-flex items-center
-                      px-5
-                      rounded-2xl
-                      whitespace-nowrap
-                      ${ev.color}
-                    `}
+                      class="absolute inset-0 rounded-2xl"
+                      style={`background-color:${bg};`}
+                    />
+
+                    <a
+                      href={ev.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="sticky left-0 z-10 h-full inline-flex items-center
+                             px-5 rounded-2xl whitespace-nowrap
+                             font-[PPEditorialNew] transition hover:opacity-90"
+                      style={`background-color:${bg};color:${text};`}
                     >
-                      <span class="relative z-10 text-[15px] font-medium">
-                        {ev.title}
-                      </span>
-                    </div>
+                      <span class="text-[15px] font-medium">{ev.title}</span>
+                    </a>
                   </div>
                 );
               })
@@ -266,14 +313,14 @@ events.forEach((ev) => {
     </main>
 
     <!-- =========================
-         MES DINÁMICO DESKTOP
+         MES DINÁMICO
     ========================== -->
     <script>
       const timeline = document.getElementById("timeline");
       const monthLabel = document.getElementById("monthLabel");
       const dayCols = document.querySelectorAll(".day-col");
 
-      const columnWidth = 180 + 56; // 👈 CLAVE
+      const columnWidth = 180 + 56;
 
       timeline?.addEventListener("scroll", () => {
         const index = Math.floor(timeline.scrollLeft / columnWidth);

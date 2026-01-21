@@ -2,23 +2,10 @@
 
 @font-face {
   font-family: "PPEditorialNew";
-  src: url("/fonts/PPEditorialNew-Regular.otf") format("opentype");
-  font-weight: 400;
-  font-style: normal;
-}
-
-@font-face {
-  font-family: "PPEditorialNew";
-  src: url("/fonts/PPEditorialNew-Italic.otf") format("opentype");
-  font-weight: 400;
-  font-style: italic;
-}
-
-@font-face {
-  font-family: "PPEditorialNew";
   src: url("/fonts/PPEditorialNew-Ultralight.otf") format("opentype");
   font-weight: 200;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
@@ -26,6 +13,23 @@
   src: url("/fonts/PPEditorialNew-UltralightItalic.otf") format("opentype");
   font-weight: 200;
   font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PPEditorialNew";
+  src: url("/fonts/PPEditorialNew-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PPEditorialNew";
+  src: url("/fonts/PPEditorialNew-Italic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
 }
 
 @font-face {
@@ -33,6 +37,7 @@
   src: url("/fonts/PPEditorialNew-Ultrabold.otf") format("opentype");
   font-weight: 900;
   font-style: normal;
+  font-display: swap;
 }
 
 @font-face {
@@ -40,53 +45,9 @@
   src: url("/fonts/PPEditorialNew-UltraboldItalic.otf") format("opentype");
   font-weight: 900;
   font-style: italic;
+  font-display: swap;
 }
 
 body {
   font-family: "PPEditorialNew", serif;
-}
-
-#timeline {
-  overflow-x: auto;
-  overflow-y: visible;
-}
-
-.event {
-  position: relative;
-  min-width: 0;
-}
-
-.event-inner {
-  position: relative;
-  overflow: hidden;
-  padding: 0.75rem;
-}
-
-.event-title {
-  left: 0;
-  display: inline-block;
-  white-space: nowrap;
-  z-index: 1;
-  padding-right: 1rem;
-}
-body {
-  font-family: "PPEditorialNew", sans-serif;
-}
-
-/* Para diferentes pesos: */
-.ultralight {
-  font-weight: 200;
-}
-
-.regular {
-  font-weight: 400;
-}
-
-.ultrabold {
-  font-weight: 900;
-}
-
-/* Para itálica: */
-.italic {
-  font-style: italic;
 }
