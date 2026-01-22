@@ -32,7 +32,7 @@ const today = new Date(
    FETCH EVENTOS
 ========================= */
 const response = await fetch(
-  "https://prueba3-base-ana-production.up.railway.app/api/events",
+  "https://base-ana-calendario.up.railway.app/api/events",
 );
 const json = await response.json();
 
@@ -255,7 +255,7 @@ function getTextColor(bgColor) {
             {
               days.map((d) => (
                 <div
-                  class="text-center text-[20px] font-semibold pb-3
+                  class="text-center text-[20px] font-normal pb-3
                        border-b border-neutral-300
                        font-[PPEditorialNew]"
                 >
@@ -301,7 +301,7 @@ function getTextColor(bgColor) {
                              font-[PPEditorialNew] transition hover:opacity-90"
                       style={`background-color:${bg};color:${text};`}
                     >
-                      <span class="text-[15px] font-medium">{ev.title}</span>
+                      <span class="text-[15px] font-normal">{ev.title}</span>
                     </a>
                   </div>
                 );
