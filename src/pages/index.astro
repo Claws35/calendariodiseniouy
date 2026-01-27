@@ -9,6 +9,20 @@ import "../styles/global.css";
 const TZ = "America/Montevideo";
 const DAY_MS = 86400000;
 
+/* =========================
+   CONFIGURACIÓN DE TRUNCAMIENTO
+========================= */
+const MAX_TITLE_LENGTH = 25; // Cambiar este número para ajustar cuántos caracteres máximo
+
+/* Función para truncar texto */
+const truncateText = (text, maxLength) => {
+  if (!text) return "";
+  if (text.length > maxLength) {
+    return text.substring(0, maxLength) + "...";
+  }
+  return text;
+};
+
 /* Convierte cualquier fecha ISO a día UY real (00:00 UY) */
 const toUY = (iso) =>
   new Date(
@@ -217,7 +231,7 @@ function getTextColor(bgColor) {
                         style={`background-color:${bg};color:${text};`}
                       >
                         <p class="font-[PPEditorialNew] text-[15px]">
-                          {ev.title}
+                          {truncateText(ev.title, MAX_TITLE_LENGTH)}
                         </p>
                       </a>
                     );
@@ -318,7 +332,9 @@ function getTextColor(bgColor) {
          font-[PPEditorialNew] transition hover:opacity-90"
                       style={`background-color:${bg};color:${text};`}
                     >
-                      <span class="text-[15px] font-normal">{ev.title}</span>
+                      <span class="text-[15px] font-normal">
+                        {truncateText(ev.title, MAX_TITLE_LENGTH)}
+                      </span>
                     </a>
                   </div>
                 );
@@ -328,6 +344,18 @@ function getTextColor(bgColor) {
         </div>
       </div>
     </main>
+    <!-- =========================
+     LOTTIE INTRO DESKTOP
+========================= -->
+    <div
+      id="lottieIntro"
+      class="fixed inset-0 z-[40]
+         hidden md:flex
+         items-center justify-center
+         pointer-events-none"
+    >
+      <div id="lottieContainer" class="w-[240px] h-[240px]"></div>
+    </div>
 
     <!-- =========================
      POPUP EVENTO (RESPONSIVE PRO)
@@ -458,7 +486,7 @@ function getTextColor(bgColor) {
       const imageModalImg = document.getElementById("imageModalImg");
       const closeImageModal = document.getElementById("closeImageModal");
 
-      const FALLBACK_IMAGE = "/img/event-placeholder.jpg";
+      const FALLBACK_IMAGE = "/img/imgblanca3.png";
 
       document.addEventListener("click", (e) => {
         const link = e.target.closest(".event-link");
@@ -491,10 +519,19 @@ function getTextColor(bgColor) {
           });
 
         // Imagen con fallback
+        const imageContainer = imgEl.closest("div");
         imgEl.src = link.dataset.image || FALLBACK_IMAGE;
         imgEl.onerror = () => {
           imgEl.src = FALLBACK_IMAGE;
+          imageContainer.style.backgroundColor = link.dataset.color;
         };
+
+        // Si no hay imagen, aplicar color de fondo
+        if (!link.dataset.image) {
+          imageContainer.style.backgroundColor = link.dataset.color;
+        } else {
+          imageContainer.style.backgroundColor = "";
+        }
 
         // Link
         if (link.dataset.url) {
@@ -539,6 +576,96 @@ function getTextColor(bgColor) {
           imageModalImg.src = "";
         }
       };
+
+      // Actualizar mes dinámico al hacer scroll
+      const monthLabel = document.getElementById("monthLabel");
+      const timeline = document.getElementById("timeline");
+      const dayCols = document.querySelectorAll(".day-col");
+
+      timeline.addEventListener("scroll", () => {
+        if (dayCols.length === 0) return;
+
+        // Encontrar la primera columna visible
+        const timelineRect = timeline.getBoundingClientRect();
+        let visibleMonth = null;
+
+        dayCols.forEach((col) => {
+          const colRect = col.getBoundingClientRect();
+          // Si está en el viewport
+          if (
+            colRect.left < timelineRect.right &&
+            colRect.right > timelineRect.left
+          ) {
+            if (!visibleMonth) {
+              visibleMonth = col.dataset.month;
+            }
+          }
+        });
+
+        if (visibleMonth && monthLabel) {
+          monthLabel.textContent = visibleMonth;
+        }
+      });
+
+      // Drag para arrastrar el timeline
+      let isDown = false;
+      let startX;
+      let scrollLeft;
+
+      timeline.addEventListener("mousedown", (e) => {
+        isDown = true;
+        startX = e.pageX - timeline.offsetLeft;
+        scrollLeft = timeline.scrollLeft;
+        timeline.style.cursor = "grabbing";
+      });
+
+      timeline.addEventListener("mouseleave", () => {
+        isDown = false;
+        timeline.style.cursor = "auto";
+      });
+
+      timeline.addEventListener("mouseup", () => {
+        isDown = false;
+        timeline.style.cursor = "auto";
+      });
+
+      timeline.addEventListener("mousemove", (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - timeline.offsetLeft;
+        const walk = (x - startX) * 1; // Multiplicar por 1 para velocidad normal
+        timeline.scrollLeft = scrollLeft - walk;
+      });
+
+      /* =========================
+   LOTTIE INTRO DESKTOP
+========================= */
+      const lottieIntro = document.getElementById("lottieIntro");
+      const lottieContainer = document.getElementById("lottieContainer");
+
+      // Solo desktop
+      if (window.innerWidth >= 768) {
+        lottieIntro.classList.remove("hidden");
+
+        const animation = lottie.loadAnimation({
+          container: lottieContainer,
+          renderer: "svg",
+          loop: false,
+          autoplay: true,
+          // 👇 reemplazá por tu JSON
+          path: "/intro.json",
+        });
+
+        animation.addEventListener("complete", () => {
+          lottieIntro.classList.add("opacity-0");
+
+          setTimeout(() => {
+            lottieIntro.style.display = "none";
+          }, 500);
+        });
+      }
     </script>
+    <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"
+    ></script>
   </body>
 </html>
