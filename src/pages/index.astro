@@ -20,7 +20,7 @@ const toUY = (iso) =>
     }).format(new Date(iso)) + "T00:00:00-03:00",
   );
 
-/* HOY REAL EN URUGUAY (FIX DEFINITIVO) */
+/* HOY REAL EN URUGUAY */
 const today = new Date(
   new Intl.DateTimeFormat("en-CA", {
     timeZone: TZ,
@@ -51,6 +51,9 @@ const events = (json.docs || []).map((ev) => {
     title: ev.title,
     start: ev.startDate,
     end: ev.endDate,
+    description: ev.description || "",
+    image: ev.imageneURL || null, // 👈 ESTE ERA EL PROBLEMA
+    tags: ev.tags?.map((t) => t.tag) || [],
     color: ev.color,
     url,
   };
@@ -201,10 +204,16 @@ function getTextColor(bgColor) {
 
                     return (
                       <a
-                        href={ev.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="block rounded-2xl px-4 py-3 transition hover:opacity-90"
+                        href="#"
+                        data-title={ev.title}
+                        data-start={ev.start}
+                        data-end={ev.end}
+                        data-description={ev.description}
+                        data-image={ev.image}
+                        data-tags={ev.tags.join(",")}
+                        data-url={ev.url}
+                        data-color={bg}
+                        class="event-link block rounded-2xl px-4 py-3 transition hover:opacity-90"
                         style={`background-color:${bg};color:${text};`}
                       >
                         <p class="font-[PPEditorialNew] text-[15px]">
@@ -295,12 +304,18 @@ function getTextColor(bgColor) {
                     />
 
                     <a
-                      href={ev.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="sticky left-0 z-10 h-full inline-flex items-center
-                             px-5 rounded-2xl whitespace-nowrap
-                             font-[PPEditorialNew] transition hover:opacity-90"
+                      href="#"
+                      data-title={ev.title}
+                      data-start={ev.start}
+                      data-end={ev.end}
+                      data-description={ev.description}
+                      data-image={ev.image}
+                      data-tags={ev.tags.join(",")}
+                      data-url={ev.url}
+                      data-color={bg}
+                      class="event-link sticky left-0 z-10 h-full inline-flex items-center
+         px-5 rounded-2xl whitespace-nowrap
+         font-[PPEditorialNew] transition hover:opacity-90"
                       style={`background-color:${bg};color:${text};`}
                     >
                       <span class="text-[15px] font-normal">{ev.title}</span>
@@ -315,25 +330,215 @@ function getTextColor(bgColor) {
     </main>
 
     <!-- =========================
-         MES DINÁMICO
+     POPUP EVENTO (RESPONSIVE PRO)
+========================= -->
+    <!-- =========================
+     POPUP EVENTO (RESPONSIVE PRO)
+========================= -->
+    <div
+      id="eventPopup"
+      class="fixed inset-0 z-50 bg-black/40
+         hidden items-center justify-center"
+    >
+      <div
+        class="bg-white w-full md:max-w-4xl
+           max-h-[92vh] overflow-y-auto
+           rounded-t-3xl md:rounded-3xl
+           relative
+           md:grid md:grid-cols-[42%_58%]"
+      >
+        <!-- Cerrar -->
+        <button
+          id="closePopup"
+          class="absolute top-4 right-4 z-20
+             w-10 h-10 rounded-full
+             bg-white/80 backdrop-blur
+             flex items-center justify-center
+             text-lg"
+        >
+          ✕
+        </button>
+
+        <!-- IMAGEN -->
+
+        <div
+          class="relative w-full
+         aspect-[4/3]
+         md:aspect-auto
+         max-h-[38vh] md:max-h-none
+         bg-neutral-100 overflow-hidden
+         md:rounded-l-3xl"
+        >
+          <img
+            id="popupImage"
+            class="w-full h-full object-cover cursor-zoom-in"
+            alt=""
+            loading="lazy"
+          />
+        </div>
+
+        <!-- CONTENIDO -->
+        <div class="px-6 py-7 space-y-4 md:space-y-5">
+          <h2
+            id="popupTitle"
+            class="text-[22px] md:text-[24px]
+               leading-tight font-[PPEditorialNew]"
+          >
+          </h2>
+
+          <p id="popupDates" class="text-sm text-neutral-500"></p>
+
+          <div id="popupTags" class="flex flex-wrap gap-2"></div>
+
+          <p
+            id="popupDesc"
+            class="text-[15px] leading-relaxed text-neutral-800"
+          >
+          </p>
+
+          <!-- BOTÓN VER MÁS -->
+          <a
+            id="popupLink"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2
+               px-5 py-3 mt-2
+               rounded-full
+               text-sm font-medium
+               border border-neutral-300
+               transition
+               hover:bg-neutral-900 hover:text-white
+               hover:border-neutral-900"
+          >
+            Ver más
+            <span class="text-lg leading-none">→</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- =========================
+     MODAL IMAGEN FULLSCREEN
+========================= -->
+    <div
+      id="imageModal"
+      class="fixed inset-0 z-[60] hidden bg-black/90
+         flex items-center justify-center"
+    >
+      <img
+        id="imageModalImg"
+        class="max-w-full max-h-full object-contain"
+        alt=""
+      />
+
+      <button
+        id="closeImageModal"
+        class="absolute top-4 right-4
+           w-10 h-10 rounded-full
+           bg-white/90 text-black
+           flex items-center justify-center text-lg"
+      >
+        ✕
+      </button>
+    </div>
+
+    <!-- =========================
+         JS POPUP + MES DINÁMICO
     ========================== -->
     <script>
-      const timeline = document.getElementById("timeline");
-      const monthLabel = document.getElementById("monthLabel");
-      const dayCols = document.querySelectorAll(".day-col");
+      const popup = document.getElementById("eventPopup");
+      const closeBtn = document.getElementById("closePopup");
 
-      const columnWidth = 180 + 56;
+      const titleEl = document.getElementById("popupTitle");
+      const datesEl = document.getElementById("popupDates");
+      const descEl = document.getElementById("popupDesc");
+      const imgEl = document.getElementById("popupImage");
+      const tagsEl = document.getElementById("popupTags");
+      const linkEl = document.getElementById("popupLink");
+      const imageModal = document.getElementById("imageModal");
+      const imageModalImg = document.getElementById("imageModalImg");
+      const closeImageModal = document.getElementById("closeImageModal");
 
-      timeline?.addEventListener("scroll", () => {
-        const index = Math.floor(timeline.scrollLeft / columnWidth);
-        const day = dayCols[index];
-        if (!day) return;
+      const FALLBACK_IMAGE = "/img/event-placeholder.jpg";
 
-        const month = day.dataset.month;
-        if (monthLabel.textContent !== month) {
-          monthLabel.textContent = month;
+      document.addEventListener("click", (e) => {
+        const link = e.target.closest(".event-link");
+        if (!link) return;
+
+        e.preventDefault();
+
+        titleEl.textContent = link.dataset.title;
+        titleEl.style.color = link.dataset.color;
+
+        const start = new Date(link.dataset.start);
+        const end = new Date(link.dataset.end);
+
+        datesEl.textContent =
+          start.toLocaleDateString("es-UY") +
+          (end ? " – " + end.toLocaleDateString("es-UY") : "");
+
+        descEl.textContent = link.dataset.description || "";
+
+        // Tags
+        tagsEl.innerHTML = "";
+        (link.dataset.tags || "")
+          .split(",")
+          .filter(Boolean)
+          .forEach((t) => {
+            const span = document.createElement("span");
+            span.className = "px-3 py-1 text-xs rounded-full bg-neutral-200";
+            span.textContent = t;
+            tagsEl.appendChild(span);
+          });
+
+        // Imagen con fallback
+        imgEl.src = link.dataset.image || FALLBACK_IMAGE;
+        imgEl.onerror = () => {
+          imgEl.src = FALLBACK_IMAGE;
+        };
+
+        // Link
+        if (link.dataset.url) {
+          linkEl.href = link.dataset.url;
+          linkEl.classList.remove("hidden");
+        } else {
+          linkEl.classList.add("hidden");
         }
+
+        popup.classList.remove("hidden");
+        popup.classList.add("flex");
+        document.body.style.overflow = "hidden";
       });
+
+      closeBtn.onclick = () => {
+        popup.classList.add("hidden");
+        popup.classList.remove("flex");
+        document.body.style.overflow = "";
+      };
+
+      popup.onclick = (e) => {
+        if (e.target === popup) {
+          popup.classList.add("hidden");
+          popup.classList.remove("flex");
+          document.body.style.overflow = "";
+        }
+      };
+
+      imgEl.addEventListener("click", () => {
+        if (!imgEl.src) return;
+        imageModalImg.src = imgEl.src;
+        imageModal.classList.remove("hidden");
+      });
+      closeImageModal.onclick = () => {
+        imageModal.classList.add("hidden");
+        imageModalImg.src = "";
+      };
+
+      imageModal.onclick = (e) => {
+        if (e.target === imageModal) {
+          imageModal.classList.add("hidden");
+          imageModalImg.src = "";
+        }
+      };
     </script>
   </body>
 </html>
