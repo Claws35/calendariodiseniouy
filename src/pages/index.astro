@@ -48,7 +48,7 @@ const today = new Date(
    FETCH EVENTOS
 ========================= */
 const response = await fetch(
-  "https://base-ana-calendario.up.railway.app/api/events",
+  "https://base-ana-calendario.up.railway.app/api/events?limit=1000",
 );
 const json = await response.json();
 
