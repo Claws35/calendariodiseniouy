@@ -637,6 +637,17 @@ function getTextColor(bgColor) {
         timeline.scrollLeft = scrollLeft - walk;
       });
 
+      // Scroll con rueda del mouse (wheel event)
+      timeline.addEventListener("wheel", (e) => {
+        // Solo si hay contenido que scrollear horizontalmente
+        if (timeline.scrollWidth > timeline.clientWidth) {
+          e.preventDefault();
+          // deltaY positivo = scroll hacia abajo, lo convertimos a scroll derecha
+          // deltaY negativo = scroll hacia arriba, lo convertimos a scroll izquierda
+          timeline.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
+
       /* =========================
    LOTTIE INTRO DESKTOP
 ========================= */
