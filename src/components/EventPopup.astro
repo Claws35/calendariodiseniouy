@@ -1,0 +1,225 @@
+---
+
+---
+
+<div
+  id="eventPopup"
+  class="fixed inset-0 z-50 bg-black/40 hidden items-center justify-center"
+  role="dialog"
+  aria-labelledby="popupTitle"
+  aria-hidden="true"
+>
+  <div
+    class="bg-white w-full md:max-w-4xl
+       max-h-[92vh] overflow-y-auto
+       rounded-t-3xl md:rounded-3xl
+       relative
+       md:grid md:grid-cols-[42%_58%]"
+  >
+    <!-- Cerrar -->
+    <button
+      id="closePopup"
+      class="absolute top-4 right-4 z-20
+         w-10 h-10 rounded-full
+         bg-white/80 backdrop-blur
+         flex items-center justify-center
+         text-lg hover:bg-white transition
+         focus:outline-none focus:ring-2 focus:ring-neutral-900"
+      aria-label="Cerrar diálogo"
+    >
+      ✕
+    </button>
+
+    <!-- IMAGEN -->
+    <div
+      class="relative w-full
+     aspect-[4/3]
+     md:aspect-auto
+     max-h-[38vh] md:max-h-none
+     bg-neutral-100 overflow-hidden
+     md:rounded-l-3xl"
+    >
+      <img
+        id="popupImage"
+        class="w-full h-full object-cover cursor-zoom-in"
+        alt=""
+        loading="lazy"
+      />
+    </div>
+
+    <!-- CONTENIDO -->
+    <div class="px-6 py-7 space-y-4 md:space-y-5">
+      <h2
+        id="popupTitle"
+        class="text-[22px] md:text-[24px]
+           leading-tight font-[PPEditorialNew]"
+      >
+      </h2>
+
+      <p id="popupDates" class="text-sm text-neutral-500"></p>
+
+      <div id="popupTags" class="flex flex-wrap gap-2"></div>
+
+      <p id="popupDesc" class="text-[15px] leading-relaxed text-neutral-800">
+      </p>
+
+      <!-- BOTÓN VER MÁS -->
+      <a
+        id="popupLink"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-2
+           px-5 py-3 mt-2
+           rounded-full
+           text-sm font-medium
+           border border-neutral-300
+           transition
+           hover:bg-neutral-900 hover:text-white
+           hover:border-neutral-900
+           focus:outline-none focus:ring-2 focus:ring-neutral-900"
+      >
+        Ver más
+        <span class="text-lg leading-none">→</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Imagen Fullscreen -->
+<div
+  id="imageModal"
+  class="fixed inset-0 z-[60] hidden bg-black/90 flex items-center justify-center"
+  role="dialog"
+  aria-hidden="true"
+>
+  <img
+    id="imageModalImg"
+    class="max-w-full max-h-full object-contain"
+    alt="Imagen ampliada del evento"
+  />
+
+  <button
+    id="closeImageModal"
+    class="absolute top-4 right-4
+       w-10 h-10 rounded-full
+       bg-white/90 text-black
+       flex items-center justify-center text-lg
+       hover:bg-white transition
+       focus:outline-none focus:ring-2 focus:ring-white"
+    aria-label="Cerrar imagen ampliada"
+  >
+    ✕
+  </button>
+</div>
+
+<script>
+  const popup = document.getElementById("eventPopup");
+  const closeBtn = document.getElementById("closePopup");
+  const titleEl = document.getElementById("popupTitle");
+  const datesEl = document.getElementById("popupDates");
+  const descEl = document.getElementById("popupDesc");
+  const imgEl = document.getElementById("popupImage");
+  const tagsEl = document.getElementById("popupTags");
+  const linkEl = document.getElementById("popupLink");
+  const imageModal = document.getElementById("imageModal");
+  const imageModalImg = document.getElementById("imageModalImg");
+  const closeImageModal = document.getElementById("closeImageModal");
+
+  const FALLBACK_IMAGE = "/img/imgblanca3.png";
+
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest(".event-link");
+    if (!link) return;
+
+    e.preventDefault();
+
+    titleEl.textContent = link.dataset.title;
+    titleEl.style.color = link.dataset.color;
+
+    const start = new Date(link.dataset.start);
+    const end = new Date(link.dataset.end);
+
+    datesEl.textContent =
+      start.toLocaleDateString("es-UY") +
+      (end ? " – " + end.toLocaleDateString("es-UY") : "");
+
+    descEl.textContent = link.dataset.description || "";
+
+    // Tags
+    tagsEl.innerHTML = "";
+    (link.dataset.tags || "")
+      .split(",")
+      .filter(Boolean)
+      .forEach((t) => {
+        const span = document.createElement("span");
+        span.className = "px-3 py-1 text-xs rounded-full bg-neutral-200";
+        span.textContent = t;
+        tagsEl.appendChild(span);
+      });
+
+    // Imagen con fallback
+    const imageContainer = imgEl.closest("div");
+    imgEl.src = link.dataset.image || FALLBACK_IMAGE;
+    imgEl.onerror = () => {
+      imgEl.src = FALLBACK_IMAGE;
+      imageContainer.style.backgroundColor = link.dataset.color;
+    };
+
+    // Si no hay imagen, aplicar color de fondo
+    if (!link.dataset.image) {
+      imageContainer.style.backgroundColor = link.dataset.color;
+    } else {
+      imageContainer.style.backgroundColor = "";
+    }
+
+    // Link
+    if (link.dataset.url) {
+      linkEl.href = link.dataset.url;
+      linkEl.classList.remove("hidden");
+    } else {
+      linkEl.classList.add("hidden");
+    }
+
+    popup.classList.remove("hidden");
+    popup.classList.add("flex");
+    popup.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  });
+
+  closeBtn.onclick = () => {
+    popup.classList.add("hidden");
+    popup.classList.remove("flex");
+    popup.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  };
+
+  popup.onclick = (e) => {
+    if (e.target === popup) {
+      popup.classList.add("hidden");
+      popup.classList.remove("flex");
+      popup.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+  };
+
+  imgEl.addEventListener("click", () => {
+    if (!imgEl.src) return;
+    imageModalImg.src = imgEl.src;
+    imageModal.classList.remove("hidden");
+    imageModal.setAttribute("aria-hidden", "false");
+  });
+
+  closeImageModal.onclick = () => {
+    imageModal.classList.add("hidden");
+    imageModalImg.src = "";
+    imageModal.setAttribute("aria-hidden", "true");
+  };
+
+  imageModal.onclick = (e) => {
+    if (e.target === imageModal) {
+      imageModal.classList.add("hidden");
+      imageModalImg.src = "";
+      imageModal.setAttribute("aria-hidden", "true");
+    }
+  };
+</script>

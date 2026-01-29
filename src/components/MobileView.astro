@@ -1,0 +1,82 @@
+---
+interface Props {
+  mobileDays: Array<{
+    key: string;
+    day: number;
+    weekday: string;
+    monthName: string;
+  }>;
+  eventsByDay: Record<string, Array<any>>;
+  getTextColor: (bgColor: string) => string;
+  truncateText: (text: string, maxLength: number) => string;
+  MAX_TITLE_LENGTH: number;
+}
+
+const {
+  mobileDays,
+  eventsByDay,
+  getTextColor,
+  truncateText,
+  MAX_TITLE_LENGTH,
+} = Astro.props;
+---
+
+<div class="block md:hidden space-y-10">
+  {
+    mobileDays.map((d, i) => {
+      const dayEvents = eventsByDay[d.key] || [];
+      const prev = mobileDays[i - 1];
+      const showMonth = !prev || prev.monthName !== d.monthName;
+
+      return (
+        <section class="space-y-3">
+          {showMonth && (
+            <div class="pt-6 pb-2">
+              <p class="text-[20px] font-semibold font-[PPEditorialNew]">
+                {d.monthName}
+              </p>
+              <div class="h-px bg-neutral-300 mt-2" />
+            </div>
+          )}
+
+          <div class="flex items-baseline gap-4">
+            <span class="text-[36px] font-[PPEditorialNew]">{d.day}</span>
+            <span class="italic text-neutral-500">{d.weekday}</span>
+          </div>
+
+          <div class="space-y-2">
+            {dayEvents.map((ev) => {
+              const bg = ev.color;
+              const text = getTextColor(bg);
+
+              return (
+                <a
+                  href="#"
+                  data-title={ev.title}
+                  data-start={ev.start}
+                  data-end={ev.end}
+                  data-description={ev.description}
+                  data-image={ev.image}
+                  data-tags={ev.tags.join(",")}
+                  data-url={ev.url}
+                  data-color={bg}
+                  class="event-link block rounded-2xl px-4 py-3 transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  style={`background-color:${bg};color:${text};focus-ring-color:${bg};`}
+                  role="button"
+                  tabindex="0"
+                  aria-label={`Evento: ${ev.title}`}
+                >
+                  <p class="font-[PPEditorialNew] text-[15px]">
+                    {truncateText(ev.title, MAX_TITLE_LENGTH)}
+                  </p>
+                </a>
+              );
+            })}
+
+            {dayEvents.length === 0 && <div class="h-px bg-neutral-200" />}
+          </div>
+        </section>
+      );
+    })
+  }
+</div>

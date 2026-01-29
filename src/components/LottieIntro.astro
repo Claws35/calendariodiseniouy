@@ -1,0 +1,42 @@
+---
+
+---
+
+<div
+  id="lottieIntro"
+  class="fixed inset-0 z-[40]
+     hidden md:flex
+     items-center justify-center
+     pointer-events-none"
+>
+  <div id="lottieContainer" class="w-[240px] h-[240px]"></div>
+</div>
+
+<script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"
+></script>
+
+<script>
+  const lottieIntro = document.getElementById("lottieIntro");
+  const lottieContainer = document.getElementById("lottieContainer");
+
+  // Solo desktop
+  if (window.innerWidth >= 768) {
+    lottieIntro.classList.remove("hidden");
+
+    const animation = lottie.loadAnimation({
+      container: lottieContainer,
+      renderer: "svg",
+      loop: false,
+      autoplay: true,
+      path: "/intro.json",
+    });
+
+    animation.addEventListener("complete", () => {
+      lottieIntro.classList.add("opacity-0");
+
+      setTimeout(() => {
+        lottieIntro.style.display = "none";
+      }, 500);
+    });
+  }
+</script>

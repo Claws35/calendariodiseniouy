@@ -1,0 +1,224 @@
+---
+interface Props {
+  days: Array<{
+    day: number;
+    weekday: string;
+    monthName: string;
+  }>;
+  sortedEvents: Array<{
+    id: string;
+    title: string;
+    start: string;
+    end: string;
+    description: string;
+    image: string | null;
+    tags: string[];
+    color: string;
+    url: string | null;
+  }>;
+  TOTAL_DAYS: number;
+  today: Date;
+  diffDays: (a: Date, b: Date) => number;
+  getTextColor: (bgColor: string) => string;
+  truncateText: (text: string, maxLength: number) => string;
+  MAX_TITLE_LENGTH: number;
+  toUY: (iso: string) => Date;
+}
+
+const {
+  days,
+  sortedEvents,
+  TOTAL_DAYS,
+  today,
+  diffDays,
+  getTextColor,
+  truncateText,
+  MAX_TITLE_LENGTH,
+  toUY,
+} = Astro.props;
+
+const rows: number[] = [];
+
+function getRow(start: number, end: number): number {
+  for (let i = 0; i < rows.length; i++) {
+    if (start > rows[i]) {
+      rows[i] = end;
+      return i + 3;
+    }
+  }
+  rows.push(end);
+  return rows.length + 2;
+}
+---
+
+<div class="hidden md:block">
+  <div
+    id="monthLabel"
+    class="sticky top-0 z-30 bg-neutral-100 py-4
+           text-[22px] font-semibold tracking-wide
+           font-[PPEditorialNew]"
+  >
+    {days[0].monthName}
+  </div>
+
+  <div id="timeline" class="overflow-x-auto min-h-[420px]">
+    <div
+      class="grid gap-x-14 gap-y-5 items-start"
+      style={`grid-template-columns: repeat(${days.length}, 180px);`}
+    >
+      {
+        days.map((d) => (
+          <div
+            class="day-col text-center text-[18px] italic text-neutral-500
+                 font-[PPEditorialNew]"
+            data-month={d.monthName}
+          >
+            {d.weekday}
+          </div>
+        ))
+      }
+
+      {
+        days.map((d) => (
+          <div
+            class="text-center text-[20px] font-normal pb-3
+                 border-b border-neutral-300
+                 font-[PPEditorialNew]"
+          >
+            {d.day}
+          </div>
+        ))
+      }
+
+      {
+        sortedEvents.map((ev) => {
+          const start = toUY(ev.start);
+          const end = toUY(ev.end);
+
+          const startOffset = diffDays(start, today);
+          const endOffset = diffDays(end, today);
+
+          if (endOffset < 0 || startOffset > TOTAL_DAYS - 1) return null;
+
+          const colStart = Math.max(1, startOffset + 1);
+          const colEnd = Math.min(TOTAL_DAYS, endOffset + 1);
+          const span = colEnd - colStart + 1;
+
+          const row = getRow(startOffset, endOffset);
+          const bg = ev.color;
+          const text = getTextColor(bg);
+
+          return (
+            <div
+              class="relative h-16"
+              style={`grid-column:${colStart}/span ${span};grid-row:${row};`}
+            >
+              <div
+                class="absolute inset-0 rounded-2xl"
+                style={`background-color:${bg};`}
+              />
+
+              <a
+                href="#"
+                data-title={ev.title}
+                data-start={ev.start}
+                data-end={ev.end}
+                data-description={ev.description}
+                data-image={ev.image}
+                data-tags={ev.tags.join(",")}
+                data-url={ev.url}
+                data-color={bg}
+                class="event-link sticky left-0 z-10 h-full inline-flex items-center
+       px-5 rounded-2xl whitespace-nowrap
+       font-[PPEditorialNew] transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                style={`background-color:${bg};color:${text};`}
+                role="button"
+                tabindex="0"
+                aria-label={`Evento: ${ev.title}`}
+              >
+                <span class="text-[15px] font-normal">
+                  {truncateText(ev.title, MAX_TITLE_LENGTH)}
+                </span>
+              </a>
+            </div>
+          );
+        })
+      }
+    </div>
+  </div>
+</div>
+
+<script>
+  // Actualizar mes dinámico al hacer scroll
+  const monthLabel = document.getElementById("monthLabel");
+  const timeline = document.getElementById("timeline");
+  const dayCols = document.querySelectorAll(".day-col");
+
+  timeline?.addEventListener("scroll", () => {
+    if (dayCols.length === 0) return;
+
+    const timelineRect = timeline!.getBoundingClientRect();
+    let visibleMonth = null;
+
+    dayCols.forEach((col) => {
+      const colRect = col.getBoundingClientRect();
+      if (
+        colRect.left < timelineRect.right &&
+        colRect.right > timelineRect.left
+      ) {
+        if (!visibleMonth) {
+          visibleMonth = col.getAttribute("data-month");
+        }
+      }
+    });
+
+    if (visibleMonth && monthLabel) {
+      monthLabel.textContent = visibleMonth;
+    }
+  });
+
+  // Drag para arrastrar el timeline
+  let isDown = false;
+  let startX: number;
+  let scrollLeft: number;
+
+  timeline?.addEventListener("mousedown", (e: MouseEvent) => {
+    isDown = true;
+    startX = e.pageX - (timeline as HTMLElement).offsetLeft;
+    scrollLeft = (timeline as HTMLElement).scrollLeft;
+    (timeline as HTMLElement).style.cursor = "grabbing";
+  });
+
+  timeline?.addEventListener("mouseleave", () => {
+    isDown = false;
+    (timeline as HTMLElement).style.cursor = "auto";
+  });
+
+  timeline?.addEventListener("mouseup", () => {
+    isDown = false;
+    (timeline as HTMLElement).style.cursor = "auto";
+  });
+
+  timeline?.addEventListener("mousemove", (e: MouseEvent) => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - (timeline as HTMLElement).offsetLeft;
+    const walk = (x - startX) * 1;
+    (timeline as HTMLElement).scrollLeft = scrollLeft - walk;
+  });
+
+  // Scroll con rueda del mouse
+  timeline?.addEventListener(
+    "wheel",
+    (e: WheelEvent) => {
+      if (
+        (timeline as HTMLElement).scrollWidth >
+        (timeline as HTMLElement).clientWidth
+      ) {
+        e.preventDefault();
+        (timeline as HTMLElement).scrollLeft += e.deltaY;
+      }
+    },
+    { passive: false },
+  );
+</script>
