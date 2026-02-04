@@ -1,0 +1,33 @@
+---
+import { Icon } from "astro-icon/components";
+import Logo from "./Logo.astro";
+---
+
+<nav class="bg-white shadow-md py-4 px-6">
+  <div class="flex items-center justify-between max-w-7xl mx-auto">
+    <!-- Logo -->
+    <div class="">
+      <Logo />
+    </div>
+
+    <!-- Iconos a la derecha -->
+    <div class="flex gap-6 items-center">
+      <a
+        href="mailto:contact@example.com"
+        class="text-gray-600 hover:text-gray-900 transition-colors"
+        aria-label="Enviar email"
+      >
+        <Icon name="mdi:email" size={24} />
+      </a>
+      <a
+        href="https://instagram.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-gray-600 hover:text-gray-900 transition-colors"
+        aria-label="Instagram"
+      >
+        <Icon name="mdi:instagram" size={24} />
+      </a>
+    </div>
+  </div>
+</nav>

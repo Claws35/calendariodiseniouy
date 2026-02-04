@@ -1,10 +1,10 @@
 ---
 export const prerender = false;
 import "../styles/global.css";
+import NavBar from "../components/NavBar.astro";
 import Timeline from "../components/Timeline.astro";
 import MobileView from "../components/MobileView.astro";
 import EventPopup from "../components/EventPopup.astro";
-import LottieIntro from "../components/LottieIntro.astro";
 
 /* =========================
    TIMEZONE URUGUAY (FIXED)
@@ -261,11 +261,8 @@ const jsonLd = {
   </head>
 
   <body class="bg-neutral-100 text-neutral-900">
-    <main class="max-w-[1400px] mx-auto px-4 md:px-10 py-12">
-      <h1 class="text-[28px] font-semibold mb-6 font-[PPEditorialNew]">
-        Calendario de eventos de diseño y arte
-      </h1>
-
+    <NavBar />
+    <main class="max-w-[1400px] mx-auto px-4 md:px-10 py-0 md:pt-20">
       <!-- MOBILE VIEW -->
       <MobileView
         {mobileDays}
@@ -288,9 +285,6 @@ const jsonLd = {
         {toUY}
       />
     </main>
-
-    <!-- LOTTIE INTRO -->
-    <LottieIntro />
 
     <!-- EVENT POPUP -->
     <EventPopup />

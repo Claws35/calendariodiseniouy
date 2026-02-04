@@ -1,4 +1,6 @@
 ---
+import MonthHeader from "./MonthHeader.astro";
+
 interface Props {
   days: Array<{
     day: number;
@@ -52,18 +54,11 @@ function getRow(start: number, end: number): number {
 ---
 
 <div class="hidden md:block">
-  <div
-    id="monthLabel"
-    class="sticky top-0 z-30 bg-neutral-100 py-4
-           text-[22px] font-semibold tracking-wide
-           font-[PPEditorialNew]"
-  >
-    {days[0].monthName}
-  </div>
+  <MonthHeader initialMonth={days[0]?.monthName || ""} elementId="monthLabel" />
 
-  <div id="timeline" class="overflow-x-auto min-h-[420px]">
+  <div id="timeline" class="overflow-x-auto min-h-[70vh]">
     <div
-      class="grid gap-x-14 gap-y-5 items-start"
+      class="grid gap-x-14 gap-y-5 items-start pr-[30vw]"
       style={`grid-template-columns: repeat(${days.length}, 180px);`}
     >
       {
@@ -109,38 +104,28 @@ function getRow(start: number, end: number): number {
           const text = getTextColor(bg);
 
           return (
-            <div
-              class="relative h-16"
-              style={`grid-column:${colStart}/span ${span};grid-row:${row};`}
-            >
-              <div
-                class="absolute inset-0 rounded-2xl"
-                style={`background-color:${bg};`}
-              />
-
-              <a
-                href="#"
-                data-title={ev.title}
-                data-start={ev.start}
-                data-end={ev.end}
-                data-description={ev.description}
-                data-image={ev.image}
-                data-tags={ev.tags.join(",")}
-                data-url={ev.url}
-                data-color={bg}
-                class="event-link sticky left-0 z-10 h-full inline-flex items-center
-       px-5 rounded-2xl whitespace-nowrap
+            <a
+              href="#"
+              data-title={ev.title}
+              data-start={ev.start}
+              data-end={ev.end}
+              data-description={ev.description}
+              data-image={ev.image}
+              data-tags={ev.tags.join(",")}
+              data-url={ev.url}
+              data-color={bg}
+              class="event-link relative h-16 flex items-center overflow-hidden
+       px-5 rounded-2xl
        font-[PPEditorialNew] transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                style={`background-color:${bg};color:${text};`}
-                role="button"
-                tabindex="0"
-                aria-label={`Evento: ${ev.title}`}
-              >
-                <span class="text-[15px] font-normal">
-                  {truncateText(ev.title, MAX_TITLE_LENGTH)}
-                </span>
-              </a>
-            </div>
+              style={`grid-column:${colStart}/span ${span};grid-row:${row};background-color:${bg};color:${text};`}
+              role="button"
+              tabindex="0"
+              aria-label={`Evento: ${ev.title}`}
+            >
+              <span class="text-[15px] font-normal truncate">
+                {truncateText(ev.title, MAX_TITLE_LENGTH)}
+              </span>
+            </a>
           );
         })
       }

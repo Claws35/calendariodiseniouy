@@ -1,0 +1,25 @@
+---
+interface Props {
+  initialMonth: string;
+  elementId: string;
+}
+
+const { initialMonth, elementId } = Astro.props;
+---
+
+<div
+  id={elementId}
+  class="sticky top-0 z-30 bg-neutral-100 md:py-4 md:px-4 text-[22px] font-normal tracking-wide font-[PPEditorialNew]"
+>
+  {initialMonth}
+</div>
+
+<script>
+  const monthLabel = document.getElementById(
+    import.meta.env.DEV
+      ? `${import.meta.env.VITE_ELEMENT_ID || ""}`
+      : `${document.currentScript?.getAttribute("data-id") || ""}`,
+  );
+  // Este script se ejecutará cuando se use el componente
+  // La lógica de actualización será inyectada desde el componente padre
+</script>

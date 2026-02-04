@@ -1,4 +1,7 @@
 ---
+import MonthHeader from "./MonthHeader.astro";
+import Logo from "./Logo.astro";
+
 interface Props {
   mobileDays: Array<{
     key: string;
@@ -19,64 +22,136 @@ const {
   truncateText,
   MAX_TITLE_LENGTH,
 } = Astro.props;
+
+// Agrupar días por mes
+const daysByMonth = mobileDays.reduce(
+  (acc, d) => {
+    const lastGroup = acc[acc.length - 1];
+    if (lastGroup && lastGroup.month === d.monthName) {
+      lastGroup.days.push(d);
+    } else {
+      acc.push({ month: d.monthName, days: [d] });
+    }
+    return acc;
+  },
+  [] as Array<{ month: string; days: typeof mobileDays }>,
+);
 ---
 
-<div class="block md:hidden space-y-10">
-  {
-    mobileDays.map((d, i) => {
-      const dayEvents = eventsByDay[d.key] || [];
-      const prev = mobileDays[i - 1];
-      const showMonth = !prev || prev.monthName !== d.monthName;
+<div class="block md:hidden">
+  <div class="sticky top-0 pt-10 z-30 bg-neutral-100">
+    <div class="flex items-right gap-3 px-4 py-4 flex-col">
+      <div>
+        <h1 class="text-[28px] font-normal font-[PPEditorialNew]">
+          Calendario
+        </h1>
+        <MonthHeader
+          initialMonth={daysByMonth[0]?.month || ""}
+          elementId="mobileMonthLabel"
+        />
+      </div>
+    </div>
+  </div>
 
-      return (
-        <section class="space-y-3">
-          {showMonth && (
-            <div class="pt-6 pb-2">
-              <p class="text-[20px] font-semibold font-[PPEditorialNew]">
-                {d.monthName}
-              </p>
-              <div class="h-px bg-neutral-300 mt-2" />
-            </div>
-          )}
+  <div id="mobileContainer" class="space-y-10 px-4">
+    {
+      daysByMonth.map((monthGroup) => (
+        <div class="month-group" data-month={monthGroup.month}>
+          {monthGroup.days.map((d) => {
+            const dayEvents = eventsByDay[d.key] || [];
 
-          <div class="flex items-baseline gap-4">
-            <span class="text-[36px] font-[PPEditorialNew]">{d.day}</span>
-            <span class="italic text-neutral-500">{d.weekday}</span>
-          </div>
+            return (
+              <section class="day-section mb-8" data-day={d.day}>
+                <div class="flex items-baseline gap-4 mb-3">
+                  <span class="text-[36px] font-[PPEditorialNew]">{d.day}</span>
+                  <span class="italic text-neutral-500">{d.weekday}</span>
+                </div>
 
-          <div class="space-y-2">
-            {dayEvents.map((ev) => {
-              const bg = ev.color;
-              const text = getTextColor(bg);
+                <div class="space-y-2">
+                  {dayEvents.map((ev) => {
+                    const bg = ev.color;
+                    const text = getTextColor(bg);
 
-              return (
-                <a
-                  href="#"
-                  data-title={ev.title}
-                  data-start={ev.start}
-                  data-end={ev.end}
-                  data-description={ev.description}
-                  data-image={ev.image}
-                  data-tags={ev.tags.join(",")}
-                  data-url={ev.url}
-                  data-color={bg}
-                  class="event-link block rounded-2xl px-4 py-3 transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
-                  style={`background-color:${bg};color:${text};focus-ring-color:${bg};`}
-                  role="button"
-                  tabindex="0"
-                  aria-label={`Evento: ${ev.title}`}
-                >
-                  <p class="font-[PPEditorialNew] text-[15px]">
-                    {truncateText(ev.title, MAX_TITLE_LENGTH)}
-                  </p>
-                </a>
-              );
-            })}
+                    return (
+                      <a
+                        href="#"
+                        data-title={ev.title}
+                        data-start={ev.start}
+                        data-end={ev.end}
+                        data-description={ev.description}
+                        data-image={ev.image}
+                        data-tags={ev.tags.join(",")}
+                        data-url={ev.url}
+                        data-color={bg}
+                        class="event-link block rounded-2xl px-4 py-3 transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                        style={`background-color:${bg};color:${text};focus-ring-color:${bg};`}
+                        role="button"
+                        tabindex="0"
+                        aria-label={`Evento: ${ev.title}`}
+                      >
+                        <p class="font-[PPEditorialNew] text-[15px]">
+                          {truncateText(ev.title, MAX_TITLE_LENGTH)}
+                        </p>
+                      </a>
+                    );
+                  })}
 
-            {dayEvents.length === 0 && <div class="h-px bg-neutral-200" />}
-          </div>
-        </section>
-      );
-    })
-  }
+                  {dayEvents.length === 0 && (
+                    <div class="h-px bg-neutral-200" />
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      ))
+    }
+  </div>
 </div>
+
+<script>
+  // Detectar qué mes está visible al hacer scroll con throttling
+  const monthLabel = document.getElementById("mobileMonthLabel");
+  const monthGroups = document.querySelectorAll(".month-group");
+
+  if (monthLabel && monthGroups.length > 0) {
+    let lastMonth = monthLabel.textContent;
+    let ticking = false;
+
+    const updateMonthLabel = () => {
+      let visibleMonth = null;
+      const headerHeight = 80;
+
+      monthGroups.forEach((group) => {
+        const rect = group.getBoundingClientRect();
+        if (rect.top < headerHeight + 100 && rect.bottom > headerHeight) {
+          visibleMonth = group.getAttribute("data-month");
+        }
+      });
+
+      if (!visibleMonth && monthGroups.length > 0) {
+        visibleMonth = (monthGroups[0] as HTMLElement).getAttribute(
+          "data-month",
+        );
+      }
+
+      // Solo actualizar si el mes cambió
+      if (visibleMonth && lastMonth !== visibleMonth) {
+        monthLabel.textContent = visibleMonth;
+        lastMonth = visibleMonth;
+      }
+
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(updateMonthLabel);
+        ticking = true;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    updateMonthLabel();
+  }
+</script>
