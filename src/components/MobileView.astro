@@ -39,12 +39,9 @@ const daysByMonth = mobileDays.reduce(
 ---
 
 <div class="block md:hidden">
-  <div class="sticky top-0 pt-10 z-30 bg-neutral-100">
+  <div class="sticky top-0 pt-10 z-30 bg-white">
     <div class="flex items-right gap-3 px-4 py-4 flex-col">
       <div>
-        <h1 class="text-[28px] font-normal font-[PPEditorialNew]">
-          Calendario
-        </h1>
         <MonthHeader
           initialMonth={daysByMonth[0]?.month || ""}
           elementId="mobileMonthLabel"
@@ -89,8 +86,8 @@ const daysByMonth = mobileDays.reduce(
                         tabindex="0"
                         aria-label={`Evento: ${ev.title}`}
                       >
-                        <p class="font-[PPEditorialNew] text-[15px]">
-                          {truncateText(ev.title, MAX_TITLE_LENGTH)}
+                        <p class="font-[PPEditorialNew] text-[15px] truncate">
+                          {ev.title}
                         </p>
                       </a>
                     );
