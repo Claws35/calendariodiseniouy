@@ -55,8 +55,26 @@
            leading-tight font-[PPEditorialNew]"
       >
       </h2>
-
-      <p id="popupDates" class="text-sm text-neutral-500"></p>
+      <div class="flex gap-4">
+        <div
+          id="dateTimeBox"
+          class="flex items-center px-3 py-1 bg-neutral-200 rounded-full"
+        >
+          <p id="popupDates" class="text-sm font-900 text-neutral-900"></p>
+          <p id="popupTime" class="text-sm font-normal text-neutral-900 pl-2">
+          </p>
+        </div>
+        <div
+          id="locationBox"
+          class="flex gap-1 px-3 py-2 bg-neutral-200 rounded-full"
+        >
+          <p>📍</p><p
+            id="popupLocation"
+            class="text-sm text-neutral-900 p-0 text-balance"
+          >
+          </p>
+        </div>
+      </div>
 
       <div id="popupTags" class="flex flex-wrap gap-2"></div>
 
@@ -88,7 +106,7 @@
 <!-- Modal Imagen Fullscreen -->
 <div
   id="imageModal"
-  class="fixed inset-0 z-50 hidden bg-black/90 items-center justify-center"
+  class="fixed inset-0 z-50 hidden bg-black/90 flex items-center justify-center"
   role="dialog"
   aria-hidden="true"
 >
@@ -124,8 +142,25 @@
   const imageModal = document.getElementById("imageModal");
   const imageModalImg = document.getElementById("imageModalImg");
   const closeImageModal = document.getElementById("closeImageModal");
+  const locationEl = document.getElementById("popupLocation");
+  const timeEl = document.getElementById("popupTime");
+  const dateTimeBox = document.getElementById("dateTimeBox");
+  const locationBox = document.getElementById("locationBox");
 
   const FALLBACK_IMAGE = "/img/imgblanca3.png";
+
+  // Función para calcular color de texto basado en el fondo
+  function getTextColor(bgColor) {
+    if (!bgColor) return "#111";
+
+    const hex = bgColor.replace("#", "");
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.6 ? "#111" : "#fff";
+  }
 
   document.addEventListener("click", (e) => {
     const link = e.target.closest(".event-link");
@@ -139,9 +174,30 @@
     const start = new Date(link.dataset.start);
     const end = new Date(link.dataset.end);
 
+    const startStr = start.toLocaleDateString("es-UY");
+    const endStr = end.toLocaleDateString("es-UY");
+
     datesEl.textContent =
-      start.toLocaleDateString("es-UY") +
-      (end ? " – " + end.toLocaleDateString("es-UY") : "");
+      startStr === endStr ? startStr : startStr + " – " + endStr;
+
+    locationEl.textContent = link.dataset.location || "";
+    timeEl.textContent = link.dataset.hora || "";
+
+    // Cambiar color de fondo dinámicamente
+    const bgColor = link.dataset.color;
+    const textColor = getTextColor(bgColor);
+
+    dateTimeBox.style.backgroundColor = bgColor;
+    dateTimeBox.style.color = textColor;
+
+    locationBox.style.backgroundColor = bgColor;
+    locationBox.style.color = textColor;
+
+    // Actualizar color de texto en los elementos hijos
+    datesEl.style.color = textColor;
+    timeEl.style.color = textColor;
+    locationEl.style.color = textColor;
+    locationBox.querySelector("p:first-child").style.color = textColor;
 
     descEl.textContent = link.dataset.description || "";
 

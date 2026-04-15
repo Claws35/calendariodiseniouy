@@ -17,6 +17,8 @@ interface Props {
     tags: string[];
     color: string;
     url: string | null;
+    location: string;
+    hora: string;
   }>;
   TOTAL_DAYS: number;
   today: Date;
@@ -114,6 +116,8 @@ function getRow(start: number, end: number): number {
               data-tags={ev.tags.join(",")}
               data-url={ev.url}
               data-color={bg}
+              data-location={ev.location}
+              data-hora={ev.hora}
               class="event-link relative h-16 flex items-center overflow-hidden
        px-5 rounded-2xl
        font-[PPEditorialNew] transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
