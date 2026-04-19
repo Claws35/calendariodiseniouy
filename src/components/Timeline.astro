@@ -58,7 +58,23 @@ function getRow(start: number, end: number): number {
 <div class="hidden md:block">
   <MonthHeader initialMonth={days[0]?.monthName || ""} elementId="monthLabel" />
 
-  <div id="timeline" class="overflow-x-auto min-h-[70vh]">
+  <!-- Hint de arrastre -->
+  <div
+    id="dragHint"
+    class="flex items-center gap-2 text-neutral-400 text-sm mb-3 select-none transition-opacity duration-500"
+    aria-hidden="true"
+  >
+    <span>←→</span>
+    <span>Arrastrá o usá las flechas del teclado para navegar</span>
+  </div>
+
+  <div
+    id="timeline"
+    class="overflow-x-auto min-h-[70vh] focus:outline-none"
+    tabindex="0"
+    role="region"
+    aria-label="Línea de tiempo de eventos"
+  >
     <div
       class="grid gap-x-14 gap-y-5 items-start pr-[30vw]"
       style={`grid-template-columns: repeat(${days.length}, 180px);`}
@@ -136,76 +152,99 @@ function getRow(start: number, end: number): number {
 </div>
 
 <script>
-  // Actualizar mes dinámico al hacer scroll
   const monthLabel = document.getElementById("monthLabel");
-  const timeline = document.getElementById("timeline");
-  const dayCols = document.querySelectorAll(".day-col");
+  const timeline = document.getElementById("timeline") as HTMLElement | null;
+  const dayCols = document.querySelectorAll<HTMLElement>(".day-col");
+  const dragHint = document.getElementById("dragHint");
 
+  /* ---- Actualizar mes al hacer scroll ---- */
   timeline?.addEventListener("scroll", () => {
     if (dayCols.length === 0) return;
-
-    const timelineRect = timeline!.getBoundingClientRect();
-    let visibleMonth = null;
-
+    const timelineRect = timeline.getBoundingClientRect();
+    let visibleMonth: string | null = null;
     dayCols.forEach((col) => {
       const colRect = col.getBoundingClientRect();
-      if (
-        colRect.left < timelineRect.right &&
-        colRect.right > timelineRect.left
-      ) {
-        if (!visibleMonth) {
-          visibleMonth = col.getAttribute("data-month");
-        }
+      if (colRect.left < timelineRect.right && colRect.right > timelineRect.left) {
+        if (!visibleMonth) visibleMonth = col.getAttribute("data-month");
       }
     });
-
-    if (visibleMonth && monthLabel) {
-      monthLabel.textContent = visibleMonth;
-    }
+    if (visibleMonth && monthLabel) monthLabel.textContent = visibleMonth;
   });
 
-  // Drag para arrastrar el timeline
+  /* ---- Ocultar hint tras primer scroll o interacción ---- */
+  function hideHint() {
+    if (dragHint) {
+      dragHint.style.opacity = "0";
+      dragHint.style.pointerEvents = "none";
+    }
+  }
+  timeline?.addEventListener("scroll", hideHint, { once: true });
+  timeline?.addEventListener("keydown", hideHint, { once: true });
+
+  /* ---- Drag para arrastrar ---- */
   let isDown = false;
   let startX: number;
   let scrollLeft: number;
 
   timeline?.addEventListener("mousedown", (e: MouseEvent) => {
     isDown = true;
-    startX = e.pageX - (timeline as HTMLElement).offsetLeft;
-    scrollLeft = (timeline as HTMLElement).scrollLeft;
-    (timeline as HTMLElement).style.cursor = "grabbing";
+    startX = e.pageX - timeline.offsetLeft;
+    scrollLeft = timeline.scrollLeft;
+    timeline.style.cursor = "grabbing";
   });
 
   timeline?.addEventListener("mouseleave", () => {
     isDown = false;
-    (timeline as HTMLElement).style.cursor = "auto";
+    timeline.style.cursor = "";
   });
 
   timeline?.addEventListener("mouseup", () => {
     isDown = false;
-    (timeline as HTMLElement).style.cursor = "auto";
+    timeline.style.cursor = "";
   });
 
   timeline?.addEventListener("mousemove", (e: MouseEvent) => {
     if (!isDown) return;
     e.preventDefault();
-    const x = e.pageX - (timeline as HTMLElement).offsetLeft;
-    const walk = (x - startX) * 1;
-    (timeline as HTMLElement).scrollLeft = scrollLeft - walk;
+    const x = e.pageX - timeline.offsetLeft;
+    timeline.scrollLeft = scrollLeft - (x - startX);
   });
 
-  // Scroll con rueda del mouse
+  /* ---- Scroll horizontal con rueda ---- */
   timeline?.addEventListener(
     "wheel",
     (e: WheelEvent) => {
-      if (
-        (timeline as HTMLElement).scrollWidth >
-        (timeline as HTMLElement).clientWidth
-      ) {
+      if (timeline.scrollWidth > timeline.clientWidth) {
         e.preventDefault();
-        (timeline as HTMLElement).scrollLeft += e.deltaY;
+        timeline.scrollLeft += e.deltaY;
       }
     },
     { passive: false },
   );
+
+  /* ---- Navegación con teclado (flechas) ---- */
+  const COL_WIDTH = 180 + 56; // 180px col + 14*4px gap (gap-x-14 = 3.5rem = 56px)
+
+  timeline?.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "ArrowRight") {
+      e.preventDefault();
+      timeline.scrollLeft += COL_WIDTH;
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      timeline.scrollLeft -= COL_WIDTH;
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      timeline.scrollLeft = 0;
+    } else if (e.key === "End") {
+      e.preventDefault();
+      timeline.scrollLeft = timeline.scrollWidth;
+    }
+  });
+
+  /* ---- Scroll al día de hoy al cargar ---- */
+  // El día de hoy es siempre la columna 1 (índice 0), así que empezamos al inicio
+  // pero si el usuario ya tiene scroll guardado, respetarlo
+  if (!sessionStorage.getItem("timelineScrolled")) {
+    timeline && (timeline.scrollLeft = 0);
+  }
 </script>

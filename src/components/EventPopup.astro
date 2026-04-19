@@ -6,12 +6,13 @@
   id="eventPopup"
   class="fixed inset-0 z-50 bg-black/40 hidden items-center justify-center"
   role="dialog"
+  aria-modal="true"
   aria-labelledby="popupTitle"
   aria-hidden="true"
 >
   <div
     class="bg-white w-full md:max-w-4xl
-       max-h-[92vh] overflow-y-auto
+       max-h-[96vh] overflow-y-auto
        rounded-t-3xl md:rounded-3xl
        relative
        md:grid md:grid-cols-[42%_58%]"
@@ -39,11 +40,21 @@
      bg-neutral-100 overflow-hidden
      md:rounded-l-3xl"
     >
+      <!-- Spinner mientras carga -->
+      <div
+        id="imgSpinner"
+        class="absolute inset-0 flex items-center justify-center bg-neutral-100 z-10"
+      >
+        <svg class="animate-spin w-8 h-8 text-neutral-400" viewBox="0 0 24 24" fill="none">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"/>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/>
+        </svg>
+      </div>
       <img
         id="popupImage"
-        class="w-full h-full object-cover cursor-zoom-in"
+        class="w-full h-full object-cover cursor-zoom-in opacity-0 transition-opacity duration-300"
         alt=""
-        loading="lazy"
+        loading="eager"
       />
     </div>
 
@@ -55,7 +66,7 @@
            leading-tight font-[PPEditorialNew]"
       >
       </h2>
-      <div class="flex gap-4">
+      <div class="flex flex-wrap gap-2">
         <div
           id="dateTimeBox"
           class="flex items-center px-3 py-1 bg-neutral-200 rounded-full"
@@ -66,7 +77,7 @@
         </div>
         <div
           id="locationBox"
-          class="flex gap-1 px-3 py-2 bg-neutral-200 rounded-full"
+          class="hidden flex gap-1 px-3 py-2 bg-neutral-200 rounded-full"
         >
           <p>📍</p><p
             id="popupLocation"
@@ -108,7 +119,9 @@
   id="imageModal"
   class="fixed inset-0 z-50 hidden bg-black/90 flex items-center justify-center"
   role="dialog"
+  aria-modal="true"
   aria-hidden="true"
+  aria-label="Imagen ampliada"
 >
   <img
     id="imageModalImg"
@@ -131,77 +144,143 @@
 </div>
 
 <script>
-  const popup = document.getElementById("eventPopup");
-  const closeBtn = document.getElementById("closePopup");
-  const titleEl = document.getElementById("popupTitle");
-  const datesEl = document.getElementById("popupDates");
-  const descEl = document.getElementById("popupDesc");
-  const imgEl = document.getElementById("popupImage");
-  const tagsEl = document.getElementById("popupTags");
-  const linkEl = document.getElementById("popupLink");
-  const imageModal = document.getElementById("imageModal");
-  const imageModalImg = document.getElementById("imageModalImg");
-  const closeImageModal = document.getElementById("closeImageModal");
-  const locationEl = document.getElementById("popupLocation");
-  const timeEl = document.getElementById("popupTime");
-  const dateTimeBox = document.getElementById("dateTimeBox");
-  const locationBox = document.getElementById("locationBox");
+  const popup = document.getElementById("eventPopup")!;
+  const closeBtn = document.getElementById("closePopup")!;
+  const titleEl = document.getElementById("popupTitle")!;
+  const datesEl = document.getElementById("popupDates")!;
+  const descEl = document.getElementById("popupDesc")!;
+  const imgEl = document.getElementById("popupImage") as HTMLImageElement;
+  const tagsEl = document.getElementById("popupTags")!;
+  const linkEl = document.getElementById("popupLink") as HTMLAnchorElement;
+  const imageModal = document.getElementById("imageModal")!;
+  const imageModalImg = document.getElementById(
+    "imageModalImg",
+  ) as HTMLImageElement;
+  const closeImageModal = document.getElementById("closeImageModal")!;
+  const locationEl = document.getElementById("popupLocation")!;
+  const timeEl = document.getElementById("popupTime")!;
+  const dateTimeBox = document.getElementById("dateTimeBox")!;
+  const locationBox = document.getElementById("locationBox")!;
 
+  const imgSpinner = document.getElementById("imgSpinner")!;
   const FALLBACK_IMAGE = "/img/imgblanca3.png";
 
-  // Función para calcular color de texto basado en el fondo
-  function getTextColor(bgColor) {
-    if (!bgColor) return "#111";
+  function showImageSpinner() {
+    imgEl.classList.add("opacity-0");
+    imgSpinner.classList.remove("hidden");
+  }
 
+  function hideImageSpinner() {
+    imgSpinner.classList.add("hidden");
+    imgEl.classList.remove("opacity-0");
+  }
+
+  function getTextColor(bgColor: string): string {
+    if (!bgColor) return "#111";
     const hex = bgColor.replace("#", "");
     const r = parseInt(hex.slice(0, 2), 16);
     const g = parseInt(hex.slice(2, 4), 16);
     const b = parseInt(hex.slice(4, 6), 16);
-
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return luminance > 0.6 ? "#111" : "#fff";
   }
 
+  /* ---- Focus trap ---- */
+  const FOCUSABLE = 'a[href],button:not([disabled]),input,textarea,select,[tabindex]:not([tabindex="-1"])';
+
+  function trapFocus(e: KeyboardEvent) {
+    if (e.key !== "Tab") return;
+    const focusable = Array.from(popup.querySelectorAll<HTMLElement>(FOCUSABLE));
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey) {
+      if (document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  /* ---- Open / Close helpers ---- */
+  let triggerEl: HTMLElement | null = null;
+
+  function openPopup() {
+    popup.classList.remove("hidden");
+    popup.classList.add("flex");
+    popup.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    popup.addEventListener("keydown", trapFocus);
+    // Scroll contenido al inicio
+    const inner = popup.querySelector("div");
+    if (inner) inner.scrollTop = 0;
+    // Enfocar el botón de cerrar
+    setTimeout(() => closeBtn.focus(), 50);
+  }
+
+  function closePopup() {
+    popup.classList.add("hidden");
+    popup.classList.remove("flex");
+    popup.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    popup.removeEventListener("keydown", trapFocus);
+    // Devolver foco al elemento que abrió el popup
+    triggerEl?.focus();
+    triggerEl = null;
+  }
+
+  /* ---- Event click ---- */
   document.addEventListener("click", (e) => {
-    const link = e.target.closest(".event-link");
+    const link = (e.target as Element).closest<HTMLElement>(".event-link");
     if (!link) return;
-
     e.preventDefault();
+    triggerEl = link;
 
-    titleEl.textContent = link.dataset.title;
-    titleEl.style.color = link.dataset.color;
+    titleEl.textContent = link.dataset.title ?? "";
+    titleEl.style.color = link.dataset.color ?? "";
 
-    const start = new Date(link.dataset.start);
-    const end = new Date(link.dataset.end);
-
+    const start = new Date(link.dataset.start ?? "");
+    const end = new Date(link.dataset.end ?? "");
     const startStr = start.toLocaleDateString("es-UY");
     const endStr = end.toLocaleDateString("es-UY");
-
     datesEl.textContent =
       startStr === endStr ? startStr : startStr + " – " + endStr;
 
-    locationEl.textContent = link.dataset.location || "";
-    timeEl.textContent = link.dataset.hora || "";
+    const hora = link.dataset.hora || "";
+    timeEl.textContent = hora;
+    timeEl.style.display = hora ? "" : "none";
 
-    // Cambiar color de fondo dinámicamente
-    const bgColor = link.dataset.color;
+    const location = link.dataset.location || "";
+    if (location) {
+      locationEl.textContent = location;
+      locationBox.classList.remove("hidden");
+      locationBox.classList.add("flex");
+    } else {
+      locationBox.classList.add("hidden");
+      locationBox.classList.remove("flex");
+    }
+
+    const bgColor = link.dataset.color ?? "";
     const textColor = getTextColor(bgColor);
 
     dateTimeBox.style.backgroundColor = bgColor;
     dateTimeBox.style.color = textColor;
+    datesEl.style.color = textColor;
+    timeEl.style.color = textColor;
 
     locationBox.style.backgroundColor = bgColor;
     locationBox.style.color = textColor;
-
-    // Actualizar color de texto en los elementos hijos
-    datesEl.style.color = textColor;
-    timeEl.style.color = textColor;
     locationEl.style.color = textColor;
-    locationBox.querySelector("p:first-child").style.color = textColor;
+    const locationIcon = locationBox.querySelector("p:first-child") as HTMLElement | null;
+    if (locationIcon) locationIcon.style.color = textColor;
 
     descEl.textContent = link.dataset.description || "";
 
-    // Tags
     tagsEl.innerHTML = "";
     (link.dataset.tags || "")
       .split(",")
@@ -213,22 +292,25 @@
         tagsEl.appendChild(span);
       });
 
-    // Imagen con fallback
-    const imageContainer = imgEl.closest("div");
-    imgEl.src = link.dataset.image || FALLBACK_IMAGE;
-    imgEl.onerror = () => {
-      imgEl.src = FALLBACK_IMAGE;
-      imageContainer.style.backgroundColor = link.dataset.color;
-    };
+    const imageContainer = imgEl.closest("div") as HTMLElement;
+    const imageSrc = link.dataset.image;
 
-    // Si no hay imagen, aplicar color de fondo
-    if (!link.dataset.image) {
-      imageContainer.style.backgroundColor = link.dataset.color;
-    } else {
+    showImageSpinner();
+    imgEl.onload = hideImageSpinner;
+
+    if (imageSrc) {
+      imgEl.src = imageSrc;
       imageContainer.style.backgroundColor = "";
+      imgEl.onerror = () => {
+        imgEl.src = FALLBACK_IMAGE;
+        imageContainer.style.backgroundColor = bgColor;
+        hideImageSpinner();
+      };
+    } else {
+      imgEl.src = FALLBACK_IMAGE;
+      imageContainer.style.backgroundColor = bgColor;
     }
 
-    // Link
     if (link.dataset.url) {
       linkEl.href = link.dataset.url;
       linkEl.classList.remove("hidden");
@@ -236,46 +318,44 @@
       linkEl.classList.add("hidden");
     }
 
-    popup.classList.remove("hidden");
-    popup.classList.add("flex");
-    popup.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+    openPopup();
   });
 
-  closeBtn.onclick = () => {
-    popup.classList.add("hidden");
-    popup.classList.remove("flex");
-    popup.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
-  };
+  /* ---- Close handlers ---- */
+  closeBtn.addEventListener("click", closePopup);
 
-  popup.onclick = (e) => {
-    if (e.target === popup) {
-      popup.classList.add("hidden");
-      popup.classList.remove("flex");
-      popup.setAttribute("aria-hidden", "true");
-      document.body.style.overflow = "";
+  popup.addEventListener("click", (e) => {
+    if (e.target === popup) closePopup();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if (!imageModal.classList.contains("hidden")) {
+        closeImageModal.click();
+      } else if (!popup.classList.contains("hidden")) {
+        closePopup();
+      }
     }
-  };
+  });
 
+  /* ---- Image zoom ---- */
   imgEl.addEventListener("click", () => {
-    if (!imgEl.src) return;
+    if (!imgEl.src || imgEl.src.endsWith(FALLBACK_IMAGE)) return;
     imageModalImg.src = imgEl.src;
     imageModal.classList.remove("hidden");
+    imageModal.classList.add("flex");
     imageModal.setAttribute("aria-hidden", "false");
+    closeImageModal.focus();
   });
 
-  closeImageModal.onclick = () => {
+  closeImageModal.addEventListener("click", () => {
     imageModal.classList.add("hidden");
+    imageModal.classList.remove("flex");
     imageModalImg.src = "";
     imageModal.setAttribute("aria-hidden", "true");
-  };
+  });
 
-  imageModal.onclick = (e) => {
-    if (e.target === imageModal) {
-      imageModal.classList.add("hidden");
-      imageModalImg.src = "";
-      imageModal.setAttribute("aria-hidden", "true");
-    }
-  };
+  imageModal.addEventListener("click", (e) => {
+    if (e.target === imageModal) closeImageModal.click();
+  });
 </script>
