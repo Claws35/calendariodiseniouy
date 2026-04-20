@@ -155,19 +155,56 @@ function getRow(start: number, end: number): number {
   const dayCols = document.querySelectorAll<HTMLElement>(".day-col");
   const dragHint = document.getElementById("dragHint");
 
-  /* ---- Actualizar mes al hacer scroll ---- */
-  timeline?.addEventListener("scroll", () => {
-    if (dayCols.length === 0) return;
-    const timelineRect = timeline.getBoundingClientRect();
-    let visibleMonth: string | null = null;
-    dayCols.forEach((col) => {
-      const colRect = col.getBoundingClientRect();
-      if (colRect.left < timelineRect.right && colRect.right > timelineRect.left) {
-        if (!visibleMonth) visibleMonth = col.getAttribute("data-month");
+  /* ---- Texto "sticky" dentro de cada evento ---- */
+  const eventLinks = timeline?.querySelectorAll<HTMLElement>(".event-link") ?? [];
+  const CARD_PADDING = 20; // px-5 = 20px
+
+  // Permitir que los spans sean desplazables (el overflow-hidden del padre recorta)
+  eventLinks.forEach((link) => {
+    const span = link.querySelector("span") as HTMLElement | null;
+    if (span) {
+      span.style.overflow = "visible";
+      span.style.textOverflow = "clip";
+      span.style.transition = "transform 0.05s linear";
+    }
+  });
+
+  function updateStickyText() {
+    if (!timeline) return;
+    const tLeft = timeline.getBoundingClientRect().left;
+    eventLinks.forEach((link) => {
+      const lRect = link.getBoundingClientRect();
+      const span = link.querySelector("span") as HTMLElement | null;
+      if (!span) return;
+      const hiddenLeft = tLeft - lRect.left;
+      if (hiddenLeft > 0 && lRect.right > tLeft + CARD_PADDING) {
+        span.style.transform = `translateX(${hiddenLeft + CARD_PADDING}px)`;
+      } else {
+        span.style.transform = "";
       }
     });
-    if (visibleMonth && monthLabel) monthLabel.textContent = visibleMonth;
+  }
+
+  /* ---- Actualizar mes al hacer scroll ---- */
+  timeline?.addEventListener("scroll", () => {
+    // Mes visible
+    if (dayCols.length > 0) {
+      const timelineRect = timeline.getBoundingClientRect();
+      let visibleMonth: string | null = null;
+      dayCols.forEach((col) => {
+        const colRect = col.getBoundingClientRect();
+        if (colRect.left < timelineRect.right && colRect.right > timelineRect.left) {
+          if (!visibleMonth) visibleMonth = col.getAttribute("data-month");
+        }
+      });
+      if (visibleMonth && monthLabel) monthLabel.textContent = visibleMonth;
+    }
+    // Texto sticky
+    updateStickyText();
   });
+
+  // Estado inicial
+  updateStickyText();
 
   /* ---- Ocultar hint tras primer scroll o interacción ---- */
   function hideHint() {
