@@ -58,23 +58,21 @@ function getRow(start: number, end: number): number {
 <div class="hidden md:block">
   <MonthHeader initialMonth={days[0]?.monthName || ""} elementId="monthLabel" />
 
-  <!-- Hint de arrastre -->
-  <div
-    id="dragHint"
-    class="flex items-center gap-2 text-neutral-400 text-sm mb-3 select-none transition-opacity duration-500"
-    aria-hidden="true"
-  >
-    <span>←→</span>
-    <span>Arrastrá o usá las flechas del teclado para navegar</span>
-  </div>
-
   <div
     id="timeline"
-    class="overflow-x-auto min-h-[70vh] focus:outline-none"
-    tabindex="0"
+    class="relative overflow-x-auto min-h-[70vh]"
     role="region"
     aria-label="Línea de tiempo de eventos"
   >
+    <!-- Hint de arrastre: overlay dentro del timeline, no ocupa espacio -->
+    <div
+      id="dragHint"
+      class="sticky left-0 top-0 z-10 inline-flex items-center gap-2 text-neutral-400 text-sm py-1 select-none pointer-events-none transition-opacity duration-500"
+      aria-hidden="true"
+    >
+      <span>←→</span>
+      <span>Arrastrá o usá las flechas del teclado para navegar</span>
+    </div>
     <div
       class="grid gap-x-14 gap-y-5 items-start pr-[30vw]"
       style={`grid-template-columns: repeat(${days.length}, 180px);`}
@@ -222,10 +220,16 @@ function getRow(start: number, end: number): number {
     { passive: false },
   );
 
-  /* ---- Navegación con teclado (flechas) ---- */
-  const COL_WIDTH = 180 + 56; // 180px col + 14*4px gap (gap-x-14 = 3.5rem = 56px)
+  /* ---- Navegación con teclado (flechas) – global, sin necesidad de click ---- */
+  const COL_WIDTH = 180 + 56; // 180px col + gap-x-14 (3.5rem = 56px)
 
-  timeline?.addEventListener("keydown", (e: KeyboardEvent) => {
+  document.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (!timeline) return;
+    // No interceptar si el foco está en un input, textarea, select o popup abierto
+    const tag = (document.activeElement as HTMLElement)?.tagName ?? "";
+    const popupOpen = document.getElementById("eventPopup")?.getAttribute("aria-hidden") === "false";
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(tag) || popupOpen) return;
+
     if (e.key === "ArrowRight") {
       e.preventDefault();
       timeline.scrollLeft += COL_WIDTH;
