@@ -208,13 +208,17 @@ function getRow(start: number, end: number): number {
     timeline.scrollLeft = scrollLeft - (x - startX);
   });
 
-  /* ---- Scroll horizontal con rueda ---- */
-  timeline?.addEventListener(
+  /* ---- Scroll horizontal con rueda – escucha en toda la página ---- */
+  document.addEventListener(
     "wheel",
     (e: WheelEvent) => {
+      if (!timeline) return;
+      // No interceptar si el popup está abierto
+      const popupOpen = document.getElementById("eventPopup")?.getAttribute("aria-hidden") === "false";
+      if (popupOpen) return;
       if (timeline.scrollWidth > timeline.clientWidth) {
         e.preventDefault();
-        timeline.scrollLeft += e.deltaY;
+        timeline.scrollLeft += e.deltaY + e.deltaX;
       }
     },
     { passive: false },
